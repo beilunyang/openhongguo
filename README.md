@@ -405,6 +405,33 @@ SDK 还没有发布 1.0 版本。在 1.0 之前，次版本号可能包含不兼
 
 关于本项目的最终解释权归开发者所有。开发者保留随时更改或更新本免责声明的权利，恕不另行通知。
 
+## 交流群
+
+<table>
+  <tr>
+    <td>
+      <img src="https://pic.otaku.ren/20250309/AQADAcQxGxQjaVZ-.jpg" width="360" />
+    </td>
+    <td>
+      <img src="https://pic.otaku.ren/20250309/AQADCMQxGxQjaVZ-.jpg" width="360" />
+    </td>
+  </tr>
+  <tr>
+    <td>
+      关注公众号，获取更多项目动态，以及 AI、区块链和独立开发资讯。
+    </td>
+    <td>
+      添加微信，备注「openhongguo」，拉你进微信交流群。
+    </td>
+  </tr>
+</table>
+
+也可以在社交平台上找到我：
+
+- X (Twitter)：[@0xdinglv](https://x.com/0xdinglv)
+- 小红书：[主页](https://xhslink.com/m/19FI1djnItu)
+- Telegram：[@beilunyang](https://t.me/beilunyang)
+
 ## 友链
 
 感谢 [LINUXDO](https://linux.do/) 社区提供的帮助与支持。
