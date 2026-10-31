@@ -244,7 +244,9 @@ SDK 第一次请求时注册匿名设备，然后把设备档案交给 `ProfileS
 
 从 2026-10-29 起，服务端基本只给每台匿名设备返回一次播放模型。之后同一台设备的 `ResolvePlayback` 只得到空结果，返回 `ErrAnonymousLimited`。新设备的第一次请求也不一定成功。
 
-SDK 不自动更换设备。需要连续播放时，调用方在 `ResolvePlayback` 返回 `ErrAnonymousLimited` 后调用 `ResetDevice`，然后重试。重试一两次即可。其他接口返回 `ErrAnonymousLimited` 时不要更换设备，那表示结果本来就是空的。
+SDK 不自动更换设备。需要连续播放时，调用方在 `ResolvePlayback` 返回 `ErrAnonymousLimited` 后调用 `ResetDevice`，然后重试。重试一两次即可。目前观察到的限制只出现在播放接口：设备拿不到播放模型以后，搜索和分集等接口照常返回结果，所以其他接口不需要因为这个限制更换设备。
+
+注意，`ErrAnonymousLimited` 区分不了“被限制”和“结果本来为空”：任何接口返回空的响应体都报这个错误，`Discover`、`Search` 和 `ListEpisodes` 在列表为空时也报这个错误。
 
 ```go
 pb, err := client.ResolvePlayback(ctx, episodeID, sdk.PlaybackOptions{})
