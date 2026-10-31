@@ -326,6 +326,15 @@ func playSeries(ctx context.Context, client *sdk.Client, rec *recorder, cfg Conf
 
 	rec.forget(protocol.PathPlayback)
 	pb, err := client.ResolvePlayback(ctx, page.Items[0].ID, sdk.PlaybackOptions{})
+	// Since 2026-10-29 the service answers each anonymous device with a model
+	// about once, and even a new device's first request is not certain, so
+	// an empty answer is retried on new devices the way the CLI does.
+	for i := 0; i < 2 && errors.Is(err, sdk.ErrAnonymousLimited); i++ {
+		if err = client.ResetDevice(ctx); err != nil {
+			break
+		}
+		pb, err = client.ResolvePlayback(ctx, page.Items[0].ID, sdk.PlaybackOptions{})
+	}
 	if errors.Is(err, sdk.ErrDRMProtected) && pb != nil {
 		err = nil
 	}

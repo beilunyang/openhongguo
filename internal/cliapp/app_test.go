@@ -1286,3 +1286,46 @@ func TestShortRankFilterAndCuesCommands(t *testing.T) {
 		}
 	}
 }
+
+// limitedService answers the first empty playback requests with an empty
+// model, the way the service treats an anonymous device it has served once.
+type limitedService struct {
+	seqService
+	empty int
+}
+
+func (s *limitedService) ResolvePlayback(ctx context.Context, episodeID string, opts sdk.PlaybackOptions) (*model.Playback, error) {
+	s.mu.Lock()
+	if s.empty > 0 {
+		s.empty--
+		s.mu.Unlock()
+		return nil, sdk.ErrAnonymousLimited
+	}
+	s.mu.Unlock()
+	return s.seqService.ResolvePlayback(ctx, episodeID, opts)
+}
+
+func TestEmptyPlaybackRetriesOnFreshDevice(t *testing.T) {
+	resets := 0
+	svc := &limitedService{seqService: seqService{playService: playService{episodes: threeEpisodes()}}, empty: 2}
+	media := &fakeMedia{}
+	deps := Dependencies{Service: svc, Media: media, DeviceReset: fakeResetter{calls: &resets}, Stdout: io.Discard, Stderr: io.Discard}
+	if code := Run(context.Background(), []string{"play", "7100000000000101", "--episode", "1"}, deps); code != ExitOK {
+		t.Fatalf("exit %d", code)
+	}
+	if resets != 2 || len(media.streamed) != 1 {
+		t.Fatalf("resets = %d streamed = %q", resets, media.streamed)
+	}
+}
+
+func TestEmptyPlaybackGivesUpAfterFreshDevices(t *testing.T) {
+	resets := 0
+	svc := &limitedService{seqService: seqService{playService: playService{episodes: threeEpisodes()}}, empty: 99}
+	deps := Dependencies{Service: svc, Media: &fakeMedia{}, DeviceReset: fakeResetter{calls: &resets}, Stdout: io.Discard, Stderr: io.Discard}
+	if code := Run(context.Background(), []string{"play", "7100000000000101", "--episode", "1"}, deps); code != ExitUnavailable {
+		t.Fatalf("exit %d", code)
+	}
+	if resets != playbackFreshDevices {
+		t.Fatalf("resets = %d", resets)
+	}
+}

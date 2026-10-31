@@ -206,7 +206,7 @@ func (s *session) startPrefetch(episode model.Episode) {
 func (s *session) fetch(episode model.Episode) <-chan resolved {
 	ch := make(chan resolved, 1)
 	go func() {
-		pb, err := s.d.Service.ResolvePlayback(s.ctx, episode.ID, sdk.PlaybackOptions{})
+		pb, err := resolvePlayback(s.ctx, s.d, episode.ID)
 		if errors.Is(err, sdk.ErrDRMProtected) && pb != nil {
 			err = nil
 		}

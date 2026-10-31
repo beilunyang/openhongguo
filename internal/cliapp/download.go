@@ -123,7 +123,7 @@ func downloadEpisode(ctx context.Context, d Dependencies, episode model.Episode,
 	if _, err := os.Stat(path); err == nil {
 		return 0, true, nil
 	}
-	pb, err := d.Service.ResolvePlayback(ctx, episode.ID, sdk.PlaybackOptions{})
+	pb, err := resolvePlayback(ctx, d, episode.ID)
 	if err != nil && !(errors.Is(err, sdk.ErrDRMProtected) && pb != nil) {
 		return 0, false, err
 	}

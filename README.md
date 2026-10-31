@@ -240,6 +240,39 @@ SDK 第一次请求时注册匿名设备，然后把设备档案交给 `ProfileS
 
 如果服务端拒绝匿名设备，请求返回 `ErrDeviceRejected`。这时调用 `ResetDevice`，然后重试。
 
+### 播放次数限制
+
+从 2026-10-29 起，服务端基本只给每台匿名设备返回一次播放模型。之后同一台设备的 `ResolvePlayback` 只得到空结果，返回 `ErrAnonymousLimited`。新设备的第一次请求也不一定成功。
+
+SDK 不自动更换设备。需要连续播放时，调用方在 `ResolvePlayback` 返回 `ErrAnonymousLimited` 后调用 `ResetDevice`，然后重试。重试一两次即可。其他接口返回 `ErrAnonymousLimited` 时不要更换设备，那表示结果本来就是空的。
+
+```go
+pb, err := client.ResolvePlayback(ctx, episodeID, sdk.PlaybackOptions{})
+for i := 0; i < 2 && errors.Is(err, sdk.ErrAnonymousLimited); i++ {
+	if err = client.ResetDevice(ctx); err != nil {
+		break
+	}
+	pb, err = client.ResolvePlayback(ctx, episodeID, sdk.PlaybackOptions{})
+}
+```
+
+其他语言用错误码 `ANONYMOUS_LIMITED` 判断，方法是 `resetDevice()`：
+
+```js
+async function resolvePlayback(client, episodeId) {
+  for (let i = 0; ; i++) {
+    try {
+      return await client.resolvePlayback(episodeId);
+    } catch (e) {
+      if (e.code !== 'ANONYMOUS_LIMITED' || i >= 2) throw e;
+      await client.resetDevice();
+    }
+  }
+}
+```
+
+命令行演示 `ohg` 的 `play` 和 `download` 已经这样处理。
+
 ## 自定义 HTTP
 
 实现 `sdk.Transport`，可以使用代理、记录请求或在测试中模拟服务端。
