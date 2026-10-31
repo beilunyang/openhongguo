@@ -211,6 +211,32 @@ func TestDiscoverFollowsUnlimitedCell(t *testing.T) {
 	}
 }
 
+func TestDiscoverPageSizeUsesLimit(t *testing.T) {
+	const session = "feed-session-fixture"
+	tab := []byte(`{"code":0,"data":{"tab_item":[{"tab_type":16,"title":"推荐","session_id":"` + session + `","client_template":7,"cell_data":[{"cell_id_str":"7100000000000301","show_type":407,"cell_data":[{"video_data":{"series_id":"7100000000000101","video_detail":{"series_title":"Fixture Lantern Court"}}}]}]}]}}`)
+	change := []byte(`{"code":0,"data":{"has_more":false,"cell_view":{"cell_data":[{"video_data":{"series_id":"7100000000000102","video_detail":{"series_title":"Fixture River Market"}}}]}}}`)
+	client, _ := testClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case protocol.PathRegister:
+			_, _ = w.Write(fixture(t, "register-response.json"))
+		case protocol.PathDiscover:
+			_, _ = w.Write(tab)
+		case protocol.PathCellChange:
+			q, _ := url.ParseQuery(r.URL.RawQuery)
+			if q.Get("limit") != "30" {
+				t.Fatalf("limit = %q", q.Get("limit"))
+			}
+			_, _ = w.Write(change)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	if _, err := client.Discover(context.Background(), sdk.DiscoverOptions{PageSize: 30}); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestDiscoverCursorLoadsNextOffset(t *testing.T) {
 	const session = "feed-session-fixture"
 	tab := []byte(`{"code":0,"data":{"tab_item":[{"tab_type":16,"session_id":"` + session + `","client_template":7,"cell_data":[{"cell_id_str":"7100000000000301","show_type":407,"cell_data":[{"video_data":{"series_id":"7100000000000101","video_detail":{"series_title":"Fixture Lantern Court","episode_cnt":2}}}]}]}]}}`)

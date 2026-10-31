@@ -69,7 +69,7 @@ func TestParseCellChangeReadsUnlimitedPage(t *testing.T) {
 func TestFeedCursorRoundTrip(t *testing.T) {
 	token, err := EncodeFeedCursor(FeedContinuation{
 		CellID: "7100000000000301", SessionID: "feed-session", ClientTemplate: "7",
-		ShowType: "407", TabType: "16", Offset: "6",
+		ShowType: "407", TabType: "16", Offset: "6", Limit: 30,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -78,7 +78,7 @@ func TestFeedCursorRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if next.Offset != "6" || next.CellID != "7100000000000301" || next.SessionID != "feed-session" || next.TabType != "16" {
+	if next.Offset != "6" || next.CellID != "7100000000000301" || next.SessionID != "feed-session" || next.TabType != "16" || next.Limit != 30 {
 		t.Fatalf("next = %+v", next)
 	}
 	if _, err := DecodeFeedCursor("20"); err == nil {

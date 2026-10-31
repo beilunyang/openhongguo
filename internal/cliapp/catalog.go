@@ -22,10 +22,10 @@ func cmdDiscover(ctx context.Context, args []string, d Dependencies) error {
 	}
 	if f.all {
 		return runAllPages(ctx, d, f, func(ctx context.Context, cursor string) (*sdk.Page[model.SeriesSummary], error) {
-			return d.Service.Discover(ctx, sdk.DiscoverOptions{Cursor: cursor, Channel: f.channel})
+			return d.Service.Discover(ctx, sdk.DiscoverOptions{Cursor: cursor, Channel: f.channel, PageSize: f.pageSize})
 		})
 	}
-	page, err := d.Service.Discover(ctx, sdk.DiscoverOptions{Cursor: f.cursor, Channel: f.channel})
+	page, err := d.Service.Discover(ctx, sdk.DiscoverOptions{Cursor: f.cursor, Channel: f.channel, PageSize: f.pageSize})
 	if err != nil {
 		return usageFrom(err)
 	}

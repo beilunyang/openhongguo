@@ -809,11 +809,12 @@ export interface WorkPage {
 
 /**
  * DiscoverOptions 选择一个发现页。Channel 是书城频道名，空频道即推荐。
- * Cursor 是上一页给出的令牌。
+ * Cursor 是上一页给出的令牌。PageSize 是 cell/change 的 limit（0 表示 20，上限 50）。
  */
 export interface DiscoverOptions {
   cursor?: string;
   channel?: string;
+  pageSize?: number;
 }
 
 /**
