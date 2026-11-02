@@ -454,15 +454,21 @@ SDK 还没有发布 1.0 版本。在 1.0 之前，次版本号可能包含不兼
 <table>
   <tr>
     <td>
-      <img src="https://pic.otaku.ren/20250309/AQADAcQxGxQjaVZ-.jpg" width="360" />
+      <img src="https://pic.otaku.ren/20250309/AQADAcQxGxQjaVZ-.jpg" width="240" />
     </td>
     <td>
-      <img src="https://pic.otaku.ren/20250309/AQADCMQxGxQjaVZ-.jpg" width="360" />
+      <img src="docs/images/wechat-group.jpg" width="240" />
+    </td>
+    <td>
+      <img src="https://pic.otaku.ren/20250309/AQADCMQxGxQjaVZ-.jpg" width="240" />
     </td>
   </tr>
   <tr>
     <td>
       关注公众号，获取更多项目动态，以及 AI、区块链和独立开发资讯。
+    </td>
+    <td>
+      扫码加入微信交流群。二维码每 7 天失效一次，失效时请添加右侧微信。
     </td>
     <td>
       添加微信，备注「openhongguo」，拉你进微信交流群。
