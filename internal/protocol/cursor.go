@@ -16,9 +16,10 @@ func EncodeFeedCursor(next FeedContinuation) (string, error) {
 	if err != nil || offset <= 0 || next.CellID == "" || next.SessionID == "" || next.TabType == "" || next.ShowType == "" {
 		return "", fmt.Errorf("discover cursor is not verified")
 	}
+	limit := CellChangeLimit(next.Limit)
 	raw, err := json.Marshal(feedCursor{
 		Cell: next.CellID, Session: next.SessionID, Template: next.ClientTemplate,
-		Show: next.ShowType, Tab: next.TabType, Offset: offset,
+		Show: next.ShowType, Tab: next.TabType, Offset: offset, Limit: limit,
 	})
 	if err != nil {
 		return "", err
@@ -46,6 +47,7 @@ func DecodeFeedCursor(token string) (FeedContinuation, error) {
 	next := FeedContinuation{
 		CellID: cur.Cell, SessionID: cur.Session, ClientTemplate: cur.Template,
 		ShowType: cur.Show, TabType: cur.Tab, Offset: strconv.Itoa(cur.Offset),
+		Limit: cur.Limit,
 	}
 	return next, nil
 }
@@ -57,6 +59,7 @@ type feedCursor struct {
 	Show     string `json:"show"`
 	Tab      string `json:"tab"`
 	Offset   int    `json:"offset"`
+	Limit    int    `json:"limit,omitempty"`
 }
 
 // ShortCursor continues a short-drama filter, ranking, or 上新 list: the next

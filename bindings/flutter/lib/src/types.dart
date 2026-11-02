@@ -1781,19 +1781,21 @@ class WorkPage {
 }
 
 /// DiscoverOptions 选择一个发现页。Channel 是书城频道名，空频道即推荐。
-/// Cursor 是上一页给出的令牌。
+/// Cursor 是上一页给出的令牌。PageSize 是 cell/change 的 limit（0 表示 20，上限 50）。
 class DiscoverOptions {
   final String? cursor;
   final String? channel;
+  final int? pageSize;
 
-  const DiscoverOptions({this.cursor, this.channel});
+  const DiscoverOptions({this.cursor, this.channel, this.pageSize});
 
-  DiscoverOptions copyWith({String? cursor, String? channel}) =>
-      DiscoverOptions(cursor: cursor ?? this.cursor, channel: channel ?? this.channel);
+  DiscoverOptions copyWith({String? cursor, String? channel, int? pageSize}) =>
+      DiscoverOptions(cursor: cursor ?? this.cursor, channel: channel ?? this.channel, pageSize: pageSize ?? this.pageSize);
 
   Map<String, dynamic> toJson() => {
         if (cursor != null) 'cursor': cursor!,
         if (channel != null) 'channel': channel!,
+        if (pageSize != null) 'pageSize': pageSize!,
       };
 }
 

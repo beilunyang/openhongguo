@@ -120,6 +120,19 @@ type FeedContinuation struct {
 	// Offset is the cell/change offset. The first unlimited page uses 0.
 	// A later page uses next_offset from the previous cell/change response.
 	Offset string
+	// Limit is the cell/change page size (default 20 when zero).
+	Limit int
+}
+
+// CellChangeLimit clamps a discover cell/change page size.
+func CellChangeLimit(size int) int {
+	if size <= 0 {
+		return 20
+	}
+	if size > 50 {
+		return 50
+	}
+	return size
 }
 
 // SignedCellChangePairs is the ordered GET for /reading/bookapi/bookmall/cell/change/v.
@@ -133,7 +146,7 @@ func SignedCellChangePairs(id SearchIdentity, next FeedContinuation) [][2]string
 	pairs := append(DeviceQueryPairs(id),
 		[2]string{"cell_id", next.CellID},
 		[2]string{"offset", offset},
-		[2]string{"limit", "20"},
+		[2]string{"limit", strconv.Itoa(CellChangeLimit(next.Limit))},
 		[2]string{"change_type", "0"},
 		[2]string{"tab_type", next.TabType},
 		[2]string{"show_type", next.ShowType},

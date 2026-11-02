@@ -20,10 +20,11 @@ type Page[T any] struct {
 }
 
 // DiscoverOptions 选择一个发现页。Channel 是书城频道名，空频道即推荐。
-// Cursor 是上一页给出的令牌。
+// Cursor 是上一页给出的令牌。PageSize 是 cell/change 的 limit（0 表示 20，上限 50）。
 type DiscoverOptions struct {
-	Cursor  string
-	Channel string
+	Cursor   string
+	Channel  string
+	PageSize int
 }
 
 // SearchOptions 选择一个搜索页。Tab 取值为综合、剧集、视频、讨论、小说、
@@ -68,6 +69,9 @@ func (c *Client) Discover(ctx context.Context, opts DiscoverOptions) (*Page[mode
 		if next.TabType != strconvTab(channel.ResponseTab) {
 			return nil, fmt.Errorf("discover cursor is not verified")
 		}
+		if next.Limit <= 0 {
+			next.Limit = protocol.CellChangeLimit(opts.PageSize)
+		}
 		more, err := c.cellChange(ctx, p, id, next)
 		if err != nil {
 			return nil, err
@@ -89,6 +93,7 @@ func (c *Client) Discover(ctx context.Context, opts DiscoverOptions) (*Page[mode
 	}
 	if next, ok := protocol.DiscoverContinuationTab(raw, channel.ResponseTab); ok {
 		next.Offset = "0"
+		next.Limit = protocol.CellChangeLimit(opts.PageSize)
 		more, err := c.cellChange(ctx, p, id, next)
 		if err != nil {
 			return nil, err

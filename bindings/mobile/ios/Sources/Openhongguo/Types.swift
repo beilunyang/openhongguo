@@ -1697,14 +1697,16 @@ public struct WorkPage: Codable, Hashable, Sendable {
 }
 
 /// DiscoverOptions 选择一个发现页。Channel 是书城频道名，空频道即推荐。
-/// Cursor 是上一页给出的令牌。
+/// Cursor 是上一页给出的令牌。PageSize 是 cell/change 的 limit（0 表示 20，上限 50）。
 public struct DiscoverOptions: Encodable, Hashable, Sendable {
     public var cursor: String?
     public var channel: String?
+    public var pageSize: Int?
 
-    public init(cursor: String? = nil, channel: String? = nil) {
+    public init(cursor: String? = nil, channel: String? = nil, pageSize: Int? = nil) {
         self.cursor = cursor
         self.channel = channel
+        self.pageSize = pageSize
     }
 }
 
