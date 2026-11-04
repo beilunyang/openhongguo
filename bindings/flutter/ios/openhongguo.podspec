@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'openhongguo'
-  s.version          = '0.1.0'
+  s.version          = '0.2.0'
   s.summary          = '红果短剧（Hongguo）的非官方 Flutter SDK'
   s.description      = '匿名浏览、搜索与播放，基于 gomobile 编译的 Go SDK。'
   s.homepage         = 'https://github.com/beilunyang/openhongguo'

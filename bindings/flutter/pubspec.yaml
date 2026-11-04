@@ -1,6 +1,6 @@
 name: openhongguo
 description: 红果短剧（Hongguo）的非官方 Flutter SDK：匿名浏览、搜索与播放，基于 Go SDK 编译的原生库。
-version: 0.1.0
+version: 0.2.0
 repository: https://github.com/beilunyang/openhongguo/tree/main/bindings/flutter
 issue_tracker: https://github.com/beilunyang/openhongguo/issues
 topics:

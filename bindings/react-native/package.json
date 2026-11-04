@@ -1,6 +1,6 @@
 {
   "name": "react-native-openhongguo",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "红果短剧（Hongguo）的非官方 React Native SDK：匿名浏览、搜索与播放，基于 Go SDK 编译的原生库",
   "author": "beilunyang",
   "homepage": "https://github.com/beilunyang/openhongguo/tree/main/bindings/react-native#readme",

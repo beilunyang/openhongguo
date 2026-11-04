@@ -50,7 +50,7 @@ dependencies {
 // signingInMemoryKey、signingInMemoryKeyPassword。没有签名密钥时不签名，
 // 只能发布到本地（./gradlew publishToMavenLocal）。
 mavenPublishing {
-    coordinates("io.github.beilunyang", "openhongguo", "0.1.0")
+    coordinates("io.github.beilunyang", "openhongguo", "0.2.0")
     publishToMavenCentral()
     if (providers.gradleProperty("signingInMemoryKey").isPresent) {
         signAllPublications()

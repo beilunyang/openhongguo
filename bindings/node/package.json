@@ -1,6 +1,6 @@
 {
   "name": "openhongguo",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "红果短剧（Hongguo）的非官方 Node.js SDK：匿名浏览、搜索与播放，基于 Go SDK 编译的 WebAssembly",
   "author": "beilunyang",
   "homepage": "https://github.com/beilunyang/openhongguo/tree/main/bindings/node#readme",
