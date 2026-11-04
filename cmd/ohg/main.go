@@ -52,7 +52,7 @@ func run() int {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	return cliapp.Run(ctx, os.Args[1:], cliapp.Dependencies{
-		Service: client, Profiles: store, Media: media.New(), DeviceReset: client,
+		Service: client, Profiles: store, Media: media.New(),
 		History: history.NewStore(filepath.Join(dir, "history.json")), Stdin: os.Stdin, Stdout: os.Stdout, Stderr: os.Stderr,
 	})
 }

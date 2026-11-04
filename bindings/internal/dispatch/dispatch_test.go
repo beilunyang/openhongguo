@@ -130,3 +130,21 @@ func TestParseConfigRejectsBadJSON(t *testing.T) {
 		t.Fatalf("err = %v", err)
 	}
 }
+
+func TestDeviceResetsPassesThrough(t *testing.T) {
+	for raw, want := range map[string]*int{
+		`{}`:                 nil,
+		`{"deviceResets":0}`: sdk.Int(0),
+		`{"deviceResets":3}`: sdk.Int(3),
+	} {
+		cfg, err := dispatch.ParseConfig(raw)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var opts sdk.Options
+		cfg.Apply(&opts)
+		if (want == nil) != (opts.DeviceResets == nil) || (want != nil && *want != *opts.DeviceResets) {
+			t.Errorf("%s: DeviceResets = %v, want %v", raw, opts.DeviceResets, want)
+		}
+	}
+}

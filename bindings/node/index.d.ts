@@ -124,6 +124,8 @@ export interface ClientOptions {
   distributionOrigin?: string;
   /** 可重试的失败最多尝试几次，默认 3；0 或 1 表示不重试。 */
   retryAttempts?: number;
+  /** 设备被拒或播放返回空结果时，一次调用最多换几台新的匿名设备，默认 2；0 表示关闭。 */
+  deviceResets?: number;
   /** 新注册设备自称的机型；未填的字段取默认值（小米 14）。 */
   device?: Partial<Device>;
 }

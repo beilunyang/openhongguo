@@ -43,4 +43,15 @@ type Options struct {
 	// RetryAttempts 限定可重试失败（限流、传输、5xx）时单个请求最多执行几次。
 	// 0 或 1 表示不重试。
 	RetryAttempts int
+	// DeviceResets 限定一次调用最多换几台新的匿名设备。服务端拒绝当前设备
+	// （ErrDeviceRejected），或播放接口返回空结果（ErrAnonymousLimited；
+	// 2026-10-29 起，服务端对每台匿名设备大约只给一次播放模型）时，
+	// 客户端丢弃当前设备、注册一台新设备，再重新执行这次调用。
+	// nil 表示默认的 2 次；sdk.Int(0) 表示关闭，交给调用方自己调用 ResetDevice。
+	// 换设备会覆盖 ProfileStore 里保存的档案，并通过 Logger 记一行日志。
+	DeviceResets *int
 }
+
+// Int 返回指向 v 的指针，用来设置 Options.DeviceResets 这类可选的整数字段，
+// 例如 sdk.Int(0)。Go 1.26 起也可以直接写 new(0)。
+func Int(v int) *int { return &v }

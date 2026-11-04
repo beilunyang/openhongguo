@@ -160,6 +160,7 @@ await for (final series in client.searchAll('末世', const SearchOptions(), 3))
 | `profilePath` | 设备档案的路径。默认目录不参加系统备份：Android 是 `noBackupFilesDir`，iOS 是标记为不备份的 Application Support |
 | `apiOrigin`、`registerOrigin`、`distributionOrigin` | 接口地址。默认值与 App 相同 |
 | `retryAttempts` | 可重试的失败的最多尝试次数。默认值是 3 |
+| `deviceResets` | 设备被拒或播放返回空结果时，一次调用最多更换几台匿名设备。默认值是 2，0 表示关闭 |
 | `device` | 新匿名设备的机型。空字段使用默认值（小米 14） |
 | `log` | 接收诊断日志的函数。日志中的 URL 已经脱敏 |
 

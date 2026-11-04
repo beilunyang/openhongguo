@@ -37,7 +37,7 @@ test('参数和设置原样传给原生模块，结果按 JSON 解码', async ()
   const c = await createClientWith(f.native, { apiOrigin: 'http://x', device: { model: 'Pixel' } });
   assert.deepEqual(f.created[0], {
     profilePath: '/data/openhongguo/anonymous.json',
-    config: { apiOrigin: 'http://x', retryAttempts: 3, device: { model: 'Pixel' } },
+    config: { apiOrigin: 'http://x', retryAttempts: 3, deviceResets: 2, device: { model: 'Pixel' } },
     log: false,
   });
 

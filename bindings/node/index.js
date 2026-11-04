@@ -166,6 +166,7 @@ export async function createClient(options = {}) {
     registerOrigin,
     distributionOrigin,
     retryAttempts = 3,
+    deviceResets = 2,
     device,
   } = options;
   const store = typeof profile === 'string' ? fileProfileStore(profile) : profile;
@@ -173,7 +174,7 @@ export async function createClient(options = {}) {
     transport,
     profile: store,
     log,
-    options: JSON.stringify({ apiOrigin, registerOrigin, distributionOrigin, retryAttempts, device }),
+    options: JSON.stringify({ apiOrigin, registerOrigin, distributionOrigin, retryAttempts, deviceResets, device }),
   });
   if (res.error) throw new OpenhongguoError(res.error);
   return new Client(res.call);

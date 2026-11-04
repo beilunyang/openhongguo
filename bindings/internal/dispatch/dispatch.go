@@ -18,11 +18,13 @@ import (
 
 // Config 是绑定传来的客户端设置（JSON），字段名与 Node.js 的 ClientOptions 一致。
 type Config struct {
-	APIOrigin          string       `json:"apiOrigin"`
-	RegisterOrigin     string       `json:"registerOrigin"`
-	DistributionOrigin string       `json:"distributionOrigin"`
-	RetryAttempts      int          `json:"retryAttempts"`
-	Device             model.Device `json:"device"`
+	APIOrigin          string `json:"apiOrigin"`
+	RegisterOrigin     string `json:"registerOrigin"`
+	DistributionOrigin string `json:"distributionOrigin"`
+	RetryAttempts      int    `json:"retryAttempts"`
+	// DeviceResets 是一次调用最多换几台新设备。缺省时用 SDK 的默认值，0 表示关闭。
+	DeviceResets *int         `json:"deviceResets"`
+	Device       model.Device `json:"device"`
 }
 
 // ParseConfig 解码 raw；raw 为空时返回零值。
@@ -43,6 +45,7 @@ func (cfg Config) Apply(opts *sdk.Options) {
 	opts.RegisterOrigin = cfg.RegisterOrigin
 	opts.DistributionOrigin = cfg.DistributionOrigin
 	opts.RetryAttempts = cfg.RetryAttempts
+	opts.DeviceResets = cfg.DeviceResets
 	opts.Device = cfg.Device
 }
 

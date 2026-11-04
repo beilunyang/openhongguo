@@ -22,31 +22,33 @@ type PlaybackOptions struct{}
 // 模型携带的是包装后的密钥材料（Playback.KeyMaterial），从不包含内容密钥本身、
 // 分片校验数据或解密后的媒体。
 func (c *Client) ResolvePlayback(ctx context.Context, episodeID string, _ PlaybackOptions) (*model.Playback, error) {
-	if !validID(episodeID) {
-		return nil, fmt.Errorf("invalid episode ID")
-	}
-	p, err := c.ensureSearchGuest(ctx)
-	if err != nil {
-		return nil, err
-	}
-	body, err := protocol.PlaybackBody(episodeID)
-	if err != nil {
-		return nil, err
-	}
-	ticket := c.clock().UnixMilli()
-	rawQuery, headers := sign.SignPOST(protocol.PathPlayback, protocol.DeviceQueryPairs(c.identity(p)), ticket, p.DeviceID, protocol.VersionName, body, nil)
-	raw, _, err := c.doRaw(ctx, "POST", c.apiOrigin+protocol.PathPlayback+"?"+rawQuery, anonymousHeaders(c, p, ticket, headers), body)
-	if err != nil {
-		return nil, err
-	}
-	playback, err := protocol.ParsePlayback(raw, episodeID)
-	if err != nil {
-		return nil, err
-	}
-	if playback.Protected {
-		return playback, ErrDRMProtected
-	}
-	return playback, nil
+	return withFreshDevice(ctx, c, true, func(ctx context.Context) (*model.Playback, error) {
+		if !validID(episodeID) {
+			return nil, fmt.Errorf("invalid episode ID")
+		}
+		p, err := c.ensureSearchGuest(ctx)
+		if err != nil {
+			return nil, err
+		}
+		body, err := protocol.PlaybackBody(episodeID)
+		if err != nil {
+			return nil, err
+		}
+		ticket := c.clock().UnixMilli()
+		rawQuery, headers := sign.SignPOST(protocol.PathPlayback, protocol.DeviceQueryPairs(c.identity(p)), ticket, p.DeviceID, protocol.VersionName, body, nil)
+		raw, _, err := c.doRaw(ctx, "POST", c.apiOrigin+protocol.PathPlayback+"?"+rawQuery, anonymousHeaders(c, p, ticket, headers), body)
+		if err != nil {
+			return nil, err
+		}
+		playback, err := protocol.ParsePlayback(raw, episodeID)
+		if err != nil {
+			return nil, err
+		}
+		if playback.Protected {
+			return playback, ErrDRMProtected
+		}
+		return playback, nil
+	})
 }
 
 // ContentKey 从播放模型算出加密分集的内容密钥。

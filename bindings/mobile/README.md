@@ -225,6 +225,7 @@ for try await series in client.searchAll("末世", maxPages: 3) {
 |---|---|
 | `apiOrigin`、`registerOrigin`、`distributionOrigin` | 接口地址。默认值与 App 相同 |
 | `retryAttempts` | 可重试的失败的最多尝试次数。默认值是 3 |
+| `deviceResets` | 设备被拒或播放返回空结果时，一次调用最多更换几台匿名设备。默认值是 2，0 表示关闭 |
 | `device` | 新匿名设备的机型。空字段使用默认值（小米 14） |
 | `logger` | 接收诊断日志的函数。日志中的 URL 已经脱敏 |
 

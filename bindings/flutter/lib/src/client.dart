@@ -127,6 +127,9 @@ class ClientOptions {
   /// 可重试的失败最多尝试几次，默认 3；0 或 1 表示不重试。
   final int retryAttempts;
 
+  /// 设备被拒或播放返回空结果时，一次调用最多换几台新的匿名设备，默认 2；0 表示关闭。
+  final int deviceResets;
+
   /// 新注册设备自称的机型；为空的字段取默认值（小米 14）。
   final Device? device;
 
@@ -139,6 +142,7 @@ class ClientOptions {
     this.registerOrigin,
     this.distributionOrigin,
     this.retryAttempts = 3,
+    this.deviceResets = 2,
     this.device,
     this.log,
   });
@@ -148,6 +152,7 @@ class ClientOptions {
         if (registerOrigin != null) 'registerOrigin': registerOrigin,
         if (distributionOrigin != null) 'distributionOrigin': distributionOrigin,
         'retryAttempts': retryAttempts,
+        'deviceResets': deviceResets,
         if (device != null) 'device': device!.toJson(),
       });
 }

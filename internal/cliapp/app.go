@@ -75,12 +75,6 @@ type WatchHistory interface {
 	Clear(ctx context.Context) error
 }
 
-// DeviceResetter re-registers the anonymous device after the service rejects
-// it (BaseResp 263175/263176).
-type DeviceResetter interface {
-	ResetDevice(context.Context) error
-}
-
 // Dependencies wires the CLI to the shipped SDK. History is optional; without
 // it playback is not remembered and --resume is unavailable.
 type Dependencies struct {
@@ -88,9 +82,6 @@ type Dependencies struct {
 	Profiles ProfileStore
 	Media    Media
 	History  WatchHistory
-	// DeviceReset re-registers the anonymous device after a rejection; when
-	// nil the CLI reports the failure instead of replaying.
-	DeviceReset DeviceResetter
 	// Stdin answers the --pick prompt.
 	Stdin          io.Reader
 	Stdout, Stderr io.Writer
@@ -109,9 +100,6 @@ func Run(ctx context.Context, args []string, d Dependencies) int {
 		return ExitUsage
 	}
 	err := dispatch(ctx, args, d)
-	if errors.Is(err, sdk.ErrDeviceRejected) && d.DeviceReset != nil {
-		err = recoverDevice(ctx, args, d, err)
-	}
 	if err == nil {
 		return ExitOK
 	}
@@ -123,29 +111,6 @@ func Run(ctx context.Context, args []string, d Dependencies) int {
 		return ExitUnavailable
 	}
 	return ExitFailure
-}
-
-// recoverDevice registers a new anonymous device after the service rejected
-// the current one. A command that is safe to run twice is replayed; playback
-// is not, because it would start over from its first episode.
-func recoverDevice(ctx context.Context, args []string, d Dependencies, err error) error {
-	fmt.Fprintln(d.Stderr, "ohg: the service rejected this anonymous device; registering a new one")
-	if resetErr := d.DeviceReset.ResetDevice(ctx); resetErr != nil {
-		return fmt.Errorf("%w (registering a new device failed: %v)", err, resetErr)
-	}
-	if len(args) > 0 && replaySafe[args[0]] {
-		return dispatch(ctx, args, d)
-	}
-	return fmt.Errorf("%w; a new device is registered, run `ohg continue` to pick up where playback stopped", err)
-}
-
-// replaySafe lists the commands that only read, plus download, which skips
-// the episodes already saved.
-var replaySafe = map[string]bool{
-	"discover": true, "search": true, "info": true, "episodes": true,
-	"suggest": true, "related": true, "rank": true, "category": true,
-	"landing": true, "seasons": true, "album": true, "download": true,
-	"filter": true,
 }
 
 var errUsage = errors.New("invalid arguments")

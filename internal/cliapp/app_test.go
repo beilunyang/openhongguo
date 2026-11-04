@@ -1147,65 +1147,6 @@ func TestDiscoverAllFollowsCursorsAndDropsRepeats(t *testing.T) {
 }
 
 // rejectingService fails the first call with a device rejection.
-type rejectingService struct {
-	captureService
-	calls  int
-	resets *int
-	inner  Service
-}
-
-func (s *rejectingService) GetSeries(ctx context.Context, id string) (*model.Series, error) {
-	s.calls++
-	if s.calls == 1 {
-		return nil, &sdk.CodeError{Code: 263175, Kind: protocol.KindDeviceRejected}
-	}
-	return &model.Series{SeriesSummary: model.SeriesSummary{ID: id, Title: "Recovered"}}, nil
-}
-
-type fakeResetter struct{ calls *int }
-
-func (f fakeResetter) ResetDevice(context.Context) error { *f.calls++; return nil }
-
-func TestDeviceRejectionTriggersResetAndReplay(t *testing.T) {
-	resets := 0
-	svc := &rejectingService{resets: &resets}
-	var out bytes.Buffer
-	deps := Dependencies{Service: svc, DeviceReset: fakeResetter{calls: &resets}, Stdout: &out, Stderr: io.Discard}
-	if code := Run(context.Background(), []string{"info", "7100000000000101"}, deps); code != ExitOK {
-		t.Fatalf("exit %d", code)
-	}
-	if resets != 1 || svc.calls != 2 {
-		t.Fatalf("resets = %d calls = %d", resets, svc.calls)
-	}
-	if !strings.Contains(out.String(), "Recovered") {
-		t.Fatalf("output = %q", out.String())
-	}
-}
-
-func TestDeviceRejectionDuringPlaybackIsNotReplayed(t *testing.T) {
-	resets := 0
-	svc := &seqService{playService: playService{episodes: threeEpisodes()},
-		fail: map[string]error{"7100000000000202": sdk.ErrDeviceRejected}}
-	media := &fakeMedia{}
-	var errOut bytes.Buffer
-	deps := Dependencies{Service: svc, Media: media, DeviceReset: fakeResetter{calls: &resets}, Stdout: io.Discard, Stderr: &errOut}
-	if code := Run(context.Background(), []string{"play", "7100000000000101", "--autoplay"}, deps); code == ExitOK {
-		t.Fatal("rejected playback reported success")
-	}
-	if resets != 1 {
-		t.Fatalf("resets = %d", resets)
-	}
-	// Episode 1 played once; replaying the command would play it again.
-	if len(media.streamed) != 1 {
-		t.Fatalf("streamed = %q", media.streamed)
-	}
-	for _, want := range []string{"registering a new one", "ohg continue"} {
-		if !strings.Contains(errOut.String(), want) {
-			t.Fatalf("stderr %q lacks %q", errOut.String(), want)
-		}
-	}
-}
-
 func TestShortRankFilterAndCuesCommands(t *testing.T) {
 	var out bytes.Buffer
 	svc := &captureService{}
@@ -1284,48 +1225,5 @@ func TestShortRankFilterAndCuesCommands(t *testing.T) {
 		if code, _ := run(args...); code != ExitUsage {
 			t.Fatalf("%v exit %d", args, code)
 		}
-	}
-}
-
-// limitedService answers the first empty playback requests with an empty
-// model, the way the service treats an anonymous device it has served once.
-type limitedService struct {
-	seqService
-	empty int
-}
-
-func (s *limitedService) ResolvePlayback(ctx context.Context, episodeID string, opts sdk.PlaybackOptions) (*model.Playback, error) {
-	s.mu.Lock()
-	if s.empty > 0 {
-		s.empty--
-		s.mu.Unlock()
-		return nil, sdk.ErrAnonymousLimited
-	}
-	s.mu.Unlock()
-	return s.seqService.ResolvePlayback(ctx, episodeID, opts)
-}
-
-func TestEmptyPlaybackRetriesOnFreshDevice(t *testing.T) {
-	resets := 0
-	svc := &limitedService{seqService: seqService{playService: playService{episodes: threeEpisodes()}}, empty: 2}
-	media := &fakeMedia{}
-	deps := Dependencies{Service: svc, Media: media, DeviceReset: fakeResetter{calls: &resets}, Stdout: io.Discard, Stderr: io.Discard}
-	if code := Run(context.Background(), []string{"play", "7100000000000101", "--episode", "1"}, deps); code != ExitOK {
-		t.Fatalf("exit %d", code)
-	}
-	if resets != 2 || len(media.streamed) != 1 {
-		t.Fatalf("resets = %d streamed = %q", resets, media.streamed)
-	}
-}
-
-func TestEmptyPlaybackGivesUpAfterFreshDevices(t *testing.T) {
-	resets := 0
-	svc := &limitedService{seqService: seqService{playService: playService{episodes: threeEpisodes()}}, empty: 99}
-	deps := Dependencies{Service: svc, Media: &fakeMedia{}, DeviceReset: fakeResetter{calls: &resets}, Stdout: io.Discard, Stderr: io.Discard}
-	if code := Run(context.Background(), []string{"play", "7100000000000101", "--episode", "1"}, deps); code != ExitUnavailable {
-		t.Fatalf("exit %d", code)
-	}
-	if resets != playbackFreshDevices {
-		t.Fatalf("resets = %d", resets)
 	}
 }

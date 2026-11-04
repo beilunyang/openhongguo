@@ -158,6 +158,7 @@ if (playback.protected) {
 | `transport` | 自定义的请求发送函数 |
 | `timeoutMs` | 默认发送函数的超时，单位是毫秒。默认值是 30000 |
 | `retryAttempts` | 可重试的失败的最多尝试次数。默认值是 3 |
+| `deviceResets` | 设备被拒或播放返回空结果时，一次调用最多更换几台匿名设备。默认值是 2，0 表示关闭 |
 | `device` | 新匿名设备的机型。空字段使用默认值（小米 14） |
 | `log` | 接收诊断日志的函数。日志中的 URL 已经脱敏 |
 | `apiOrigin`、`registerOrigin`、`distributionOrigin` | 接口地址。默认值与 App 相同 |

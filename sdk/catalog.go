@@ -51,55 +51,57 @@ const (
 // Discover 加载书城的一个频道，默认是“推荐”。首页由 tab 预加载和第一个不限量的
 // cell/change 页组成。带游标时只加载下一个 cell/change 页。
 func (c *Client) Discover(ctx context.Context, opts DiscoverOptions) (*Page[model.SeriesSummary], error) {
-	channel, err := protocol.ResolveDiscoverChannel(opts.Channel)
-	if err != nil {
-		return nil, err
-	}
-	p, err := c.ensureSearchGuest(ctx)
-	if err != nil {
-		return nil, err
-	}
-	id := c.identity(p)
-	if opts.Cursor != "" {
-		next, err := protocol.DecodeFeedCursor(opts.Cursor)
+	return withFreshDevice(ctx, c, false, func(ctx context.Context) (*Page[model.SeriesSummary], error) {
+		channel, err := protocol.ResolveDiscoverChannel(opts.Channel)
 		if err != nil {
 			return nil, err
 		}
-		if next.TabType != strconvTab(channel.ResponseTab) {
-			return nil, fmt.Errorf("discover cursor is not verified")
-		}
-		more, err := c.cellChange(ctx, p, id, next)
+		p, err := c.ensureSearchGuest(ctx)
 		if err != nil {
 			return nil, err
 		}
-		return finishDiscover(more.Items, next, more)
-	}
-	ticket := c.clock().UnixMilli()
-	rawQuery, headers := sign.SignGET(protocol.SignedDiscoverPairsIn(id, channel.RequestTab, channel.BottomTab), ticket, p.DeviceID, protocol.VersionName, nil)
-	raw, _, err := c.doRaw(ctx, "GET", c.apiOrigin+protocol.PathDiscover+"?"+rawQuery, anonymousHeaders(c, p, ticket, headers), nil)
-	if err != nil {
-		if errors.Is(err, ErrEndOfList) {
-			return &Page[model.SeriesSummary]{}, nil
+		id := c.identity(p)
+		if opts.Cursor != "" {
+			next, err := protocol.DecodeFeedCursor(opts.Cursor)
+			if err != nil {
+				return nil, err
+			}
+			if next.TabType != strconvTab(channel.ResponseTab) {
+				return nil, fmt.Errorf("discover cursor is not verified")
+			}
+			more, err := c.cellChange(ctx, p, id, next)
+			if err != nil {
+				return nil, err
+			}
+			return finishDiscover(more.Items, next, more)
 		}
-		return nil, err
-	}
-	parsed, err := protocol.ParseDiscoverTab(raw, channel.ResponseTab)
-	if err != nil {
-		return nil, err
-	}
-	if next, ok := protocol.DiscoverContinuationTab(raw, channel.ResponseTab); ok {
-		next.Offset = "0"
-		more, err := c.cellChange(ctx, p, id, next)
+		ticket := c.clock().UnixMilli()
+		rawQuery, headers := sign.SignGET(protocol.SignedDiscoverPairsIn(id, channel.RequestTab, channel.BottomTab), ticket, p.DeviceID, protocol.VersionName, nil)
+		raw, _, err := c.doRaw(ctx, "GET", c.apiOrigin+protocol.PathDiscover+"?"+rawQuery, anonymousHeaders(c, p, ticket, headers), nil)
+		if err != nil {
+			if errors.Is(err, ErrEndOfList) {
+				return &Page[model.SeriesSummary]{}, nil
+			}
+			return nil, err
+		}
+		parsed, err := protocol.ParseDiscoverTab(raw, channel.ResponseTab)
 		if err != nil {
 			return nil, err
 		}
-		parsed.Items = mergeSeries(parsed.Items, more.Items)
-		return finishDiscover(parsed.Items, next, more)
-	}
-	if len(parsed.Items) == 0 {
-		return nil, ErrAnonymousLimited
-	}
-	return &Page[model.SeriesSummary]{Items: parsed.Items, HasMore: parsed.HasMore}, nil
+		if next, ok := protocol.DiscoverContinuationTab(raw, channel.ResponseTab); ok {
+			next.Offset = "0"
+			more, err := c.cellChange(ctx, p, id, next)
+			if err != nil {
+				return nil, err
+			}
+			parsed.Items = mergeSeries(parsed.Items, more.Items)
+			return finishDiscover(parsed.Items, next, more)
+		}
+		if len(parsed.Items) == 0 {
+			return nil, ErrAnonymousLimited
+		}
+		return &Page[model.SeriesSummary]{Items: parsed.Items, HasMore: parsed.HasMore}, nil
+	})
 }
 
 func (c *Client) cellChange(ctx context.Context, p *DeviceProfile, id protocol.SearchIdentity, next protocol.FeedContinuation) (*protocol.CatalogPage, error) {
@@ -152,58 +154,60 @@ func mergeSeries(base, extra []model.SeriesSummary) []model.SeriesSummary {
 
 // Search 搜索短剧，可以按真人剧、漫剧等筛选。
 func (c *Client) Search(ctx context.Context, query string, opts SearchOptions) (*Page[model.SeriesSummary], error) {
-	if query == "" {
-		return nil, fmt.Errorf("missing search query")
-	}
-	tab, err := protocol.ResolveSearchTab(opts.Tab)
-	if err != nil {
-		return nil, err
-	}
-	offset, err := protocol.SearchOffset(opts.Cursor)
-	if err != nil {
-		return nil, err
-	}
-	selected, err := searchFilters(opts.Filters, tab)
-	if err != nil {
-		return nil, err
-	}
-	p, err := c.ensureSearchGuest(ctx)
-	if err != nil {
-		return nil, err
-	}
-	count := opts.PageSize
-	if count <= 0 {
-		count = 20
-	}
-	pairs := protocol.SignedSearchPairsFor(c.identity(p), query, count, offset, tab)
-	if selected != "" {
-		pairs = append(pairs, [2]string{"selected_items", selected})
-	}
-	ticket := c.clock().UnixMilli()
-	rawQuery, headers := sign.SignGET(pairs, ticket, p.DeviceID, protocol.VersionName, nil)
-	raw, _, err := c.doRaw(ctx, "GET", c.apiOrigin+protocol.PathSearch+"?"+rawQuery, anonymousHeaders(c, p, ticket, headers), nil)
-	if err != nil {
-		if errors.Is(err, ErrEndOfList) {
-			return &Page[model.SeriesSummary]{}, nil
+	return withFreshDevice(ctx, c, false, func(ctx context.Context) (*Page[model.SeriesSummary], error) {
+		if query == "" {
+			return nil, fmt.Errorf("missing search query")
 		}
-		return nil, err
-	}
-	tabType, err := strconv.Atoi(tab)
-	if err != nil {
-		return nil, err
-	}
-	parsed, err := protocol.ParseSearchTab(raw, tabType)
-	if err != nil {
-		return nil, err
-	}
-	if len(parsed.Items) == 0 {
-		return nil, ErrAnonymousLimited
-	}
-	page := &Page[model.SeriesSummary]{Items: parsed.Items, HasMore: parsed.HasMore}
-	if parsed.HasMore && parsed.NextOffset > offset {
-		page.Cursor = strconv.Itoa(parsed.NextOffset)
-	}
-	return page, nil
+		tab, err := protocol.ResolveSearchTab(opts.Tab)
+		if err != nil {
+			return nil, err
+		}
+		offset, err := protocol.SearchOffset(opts.Cursor)
+		if err != nil {
+			return nil, err
+		}
+		selected, err := searchFilters(opts.Filters, tab)
+		if err != nil {
+			return nil, err
+		}
+		p, err := c.ensureSearchGuest(ctx)
+		if err != nil {
+			return nil, err
+		}
+		count := opts.PageSize
+		if count <= 0 {
+			count = 20
+		}
+		pairs := protocol.SignedSearchPairsFor(c.identity(p), query, count, offset, tab)
+		if selected != "" {
+			pairs = append(pairs, [2]string{"selected_items", selected})
+		}
+		ticket := c.clock().UnixMilli()
+		rawQuery, headers := sign.SignGET(pairs, ticket, p.DeviceID, protocol.VersionName, nil)
+		raw, _, err := c.doRaw(ctx, "GET", c.apiOrigin+protocol.PathSearch+"?"+rawQuery, anonymousHeaders(c, p, ticket, headers), nil)
+		if err != nil {
+			if errors.Is(err, ErrEndOfList) {
+				return &Page[model.SeriesSummary]{}, nil
+			}
+			return nil, err
+		}
+		tabType, err := strconv.Atoi(tab)
+		if err != nil {
+			return nil, err
+		}
+		parsed, err := protocol.ParseSearchTab(raw, tabType)
+		if err != nil {
+			return nil, err
+		}
+		if len(parsed.Items) == 0 {
+			return nil, ErrAnonymousLimited
+		}
+		page := &Page[model.SeriesSummary]{Items: parsed.Items, HasMore: parsed.HasMore}
+		if parsed.HasMore && parsed.NextOffset > offset {
+			page.Cursor = strconv.Itoa(parsed.NextOffset)
+		}
+		return page, nil
+	})
 }
 
 // searchFilters 把 filters 拼成 selected_items 的值。
@@ -330,21 +334,23 @@ func (p *Pager) Seen() int { return len(p.seen) }
 // GET /reading/bookapi/search/suggest/v:version/。响应结构按宽松方式解析，
 // 因为不同 app 版本的列表名不同。
 func (c *Client) Suggest(ctx context.Context, prefix string) ([]model.Suggestion, error) {
-	prefix = strings.TrimSpace(prefix)
-	if prefix == "" {
-		return nil, fmt.Errorf("missing search prefix")
-	}
-	p, err := c.ensureSearchGuest(ctx)
-	if err != nil {
-		return nil, err
-	}
-	ticket := c.clock().UnixMilli()
-	rawQuery, headers := sign.SignGET(protocol.SignedSuggestPairs(c.identity(p), prefix), ticket, p.DeviceID, protocol.VersionName, nil)
-	raw, _, err := c.doRaw(ctx, "GET", c.apiOrigin+protocol.PathSuggest+"?"+rawQuery, anonymousHeaders(c, p, ticket, headers), nil)
-	if err != nil {
-		return nil, err
-	}
-	return protocol.ParseSuggest(raw)
+	return withFreshDevice(ctx, c, false, func(ctx context.Context) ([]model.Suggestion, error) {
+		prefix = strings.TrimSpace(prefix)
+		if prefix == "" {
+			return nil, fmt.Errorf("missing search prefix")
+		}
+		p, err := c.ensureSearchGuest(ctx)
+		if err != nil {
+			return nil, err
+		}
+		ticket := c.clock().UnixMilli()
+		rawQuery, headers := sign.SignGET(protocol.SignedSuggestPairs(c.identity(p), prefix), ticket, p.DeviceID, protocol.VersionName, nil)
+		raw, _, err := c.doRaw(ctx, "GET", c.apiOrigin+protocol.PathSuggest+"?"+rawQuery, anonymousHeaders(c, p, ticket, headers), nil)
+		if err != nil {
+			return nil, err
+		}
+		return protocol.ParseSuggest(raw)
+	})
 }
 
 // SearchCues 加载搜索框里轮播的提示词。
@@ -354,17 +360,19 @@ func (c *Client) Suggest(ctx context.Context, prefix string) ([]model.Suggestion
 // search_source 和 tab_name。响应不是热搜数据，
 // 而是“书名”/“主角”/“作者”/“书籍类型”这类占位提示。
 func (c *Client) SearchCues(ctx context.Context) ([]string, error) {
-	p, err := c.ensureSearchGuest(ctx)
-	if err != nil {
-		return nil, err
-	}
-	ticket := c.clock().UnixMilli()
-	rawQuery, headers := sign.SignGET(protocol.SignedCuePairs(c.identity(p), 1, 20), ticket, p.DeviceID, protocol.VersionName, nil)
-	raw, _, err := c.doRaw(ctx, "GET", c.apiOrigin+protocol.PathCue+"?"+rawQuery, anonymousHeaders(c, p, ticket, headers), nil)
-	if err != nil {
-		return nil, err
-	}
-	return protocol.ParseCue(raw)
+	return withFreshDevice(ctx, c, false, func(ctx context.Context) ([]string, error) {
+		p, err := c.ensureSearchGuest(ctx)
+		if err != nil {
+			return nil, err
+		}
+		ticket := c.clock().UnixMilli()
+		rawQuery, headers := sign.SignGET(protocol.SignedCuePairs(c.identity(p), 1, 20), ticket, p.DeviceID, protocol.VersionName, nil)
+		raw, _, err := c.doRaw(ctx, "GET", c.apiOrigin+protocol.PathCue+"?"+rawQuery, anonymousHeaders(c, p, ticket, headers), nil)
+		if err != nil {
+			return nil, err
+		}
+		return protocol.ParseCue(raw)
+	})
 }
 
 // HotSearch 加载搜索页的“猜你想搜”和各个热搜榜。
@@ -374,24 +382,26 @@ func (c *Client) SearchCues(ctx context.Context) ([]string, error) {
 // 其中的行位于一个 Lynx cell 的 lynx_data 中（2026-10-24 抓包）。
 // 每个榜单只含页面展示的那几行。
 func (c *Client) HotSearch(ctx context.Context) (*model.HotSearch, error) {
-	p, err := c.ensureSearchGuest(ctx)
-	if err != nil {
-		return nil, err
-	}
-	ticket := c.clock().UnixMilli()
-	rawQuery, headers := sign.SignGET(protocol.SignedHotSearchPairs(c.identity(p)), ticket, p.DeviceID, protocol.VersionName, nil)
-	raw, _, err := c.doRaw(ctx, "GET", c.apiOrigin+protocol.PathPlan+"?"+rawQuery, anonymousHeaders(c, p, ticket, headers), nil)
-	if err != nil {
-		return nil, err
-	}
-	hot, err := protocol.ParseHotSearch(raw)
-	if err != nil {
-		return nil, err
-	}
-	if len(hot.Boards) == 0 && len(hot.Guesses) == 0 {
-		return nil, ErrContentUnavailable
-	}
-	return hot, nil
+	return withFreshDevice(ctx, c, false, func(ctx context.Context) (*model.HotSearch, error) {
+		p, err := c.ensureSearchGuest(ctx)
+		if err != nil {
+			return nil, err
+		}
+		ticket := c.clock().UnixMilli()
+		rawQuery, headers := sign.SignGET(protocol.SignedHotSearchPairs(c.identity(p)), ticket, p.DeviceID, protocol.VersionName, nil)
+		raw, _, err := c.doRaw(ctx, "GET", c.apiOrigin+protocol.PathPlan+"?"+rawQuery, anonymousHeaders(c, p, ticket, headers), nil)
+		if err != nil {
+			return nil, err
+		}
+		hot, err := protocol.ParseHotSearch(raw)
+		if err != nil {
+			return nil, err
+		}
+		if len(hot.Boards) == 0 && len(hot.Guesses) == 0 {
+			return nil, ErrContentUnavailable
+		}
+		return hot, nil
+	})
 }
 
 // NewReleaseQuery 选择上新日历中的一天：Date 格式为 YYYYMMDD（空即今天），
@@ -408,45 +418,47 @@ type NewReleaseQuery struct {
 // target_date（2026-10-24 抓包）；匿名设备拿到的是公开日历，
 // 而不是它自己的预约列表。
 func (c *Client) NewReleases(ctx context.Context, q NewReleaseQuery) (*model.NewReleasePage, error) {
-	cur, err := protocol.DecodeShortCursor(q.Cursor)
-	if err != nil {
-		return nil, err
-	}
-	date := q.Date
-	switch {
-	case date != "" && !protocol.ValidDate(date):
-		return nil, fmt.Errorf("date must be YYYYMMDD")
-	case q.Cursor != "" && date != "" && date != cur.Date:
-		return nil, fmt.Errorf("the cursor belongs to %s, not %s", cur.Date, date)
-	case q.Cursor != "":
-		date = cur.Date
-	}
-	p, err := c.ensureSearchGuest(ctx)
-	if err != nil {
-		return nil, err
-	}
-	ticket := c.clock().UnixMilli()
-	rawQuery, headers := sign.SignGET(protocol.SignedNewReleasePairs(c.identity(p), date, cur), ticket, p.DeviceID, protocol.VersionName, nil)
-	raw, _, err := c.doRaw(ctx, "GET", c.apiOrigin+protocol.PathSubscribeList+"?"+rawQuery, anonymousHeaders(c, p, ticket, headers), nil)
-	if err != nil {
-		return nil, err
-	}
-	res, err := protocol.ParseNewReleases(raw)
-	if err != nil {
-		return nil, err
-	}
-	page := res.NewReleasePage
-	if page.Date == "" {
-		page.Date = date
-	}
-	if res.HasMore && len(res.Items) > 0 && res.NextOffset > cur.Offset {
-		next := protocol.ShortCursor{Offset: res.NextOffset, Session: res.SessionID, Date: page.Date}
-		if next.Session == "" {
-			next.Session = cur.Session
-		}
-		if page.Cursor, err = protocol.EncodeShortCursor(next); err != nil {
+	return withFreshDevice(ctx, c, false, func(ctx context.Context) (*model.NewReleasePage, error) {
+		cur, err := protocol.DecodeShortCursor(q.Cursor)
+		if err != nil {
 			return nil, err
 		}
-	}
-	return &page, nil
+		date := q.Date
+		switch {
+		case date != "" && !protocol.ValidDate(date):
+			return nil, fmt.Errorf("date must be YYYYMMDD")
+		case q.Cursor != "" && date != "" && date != cur.Date:
+			return nil, fmt.Errorf("the cursor belongs to %s, not %s", cur.Date, date)
+		case q.Cursor != "":
+			date = cur.Date
+		}
+		p, err := c.ensureSearchGuest(ctx)
+		if err != nil {
+			return nil, err
+		}
+		ticket := c.clock().UnixMilli()
+		rawQuery, headers := sign.SignGET(protocol.SignedNewReleasePairs(c.identity(p), date, cur), ticket, p.DeviceID, protocol.VersionName, nil)
+		raw, _, err := c.doRaw(ctx, "GET", c.apiOrigin+protocol.PathSubscribeList+"?"+rawQuery, anonymousHeaders(c, p, ticket, headers), nil)
+		if err != nil {
+			return nil, err
+		}
+		res, err := protocol.ParseNewReleases(raw)
+		if err != nil {
+			return nil, err
+		}
+		page := res.NewReleasePage
+		if page.Date == "" {
+			page.Date = date
+		}
+		if res.HasMore && len(res.Items) > 0 && res.NextOffset > cur.Offset {
+			next := protocol.ShortCursor{Offset: res.NextOffset, Session: res.SessionID, Date: page.Date}
+			if next.Session == "" {
+				next.Session = cur.Session
+			}
+			if page.Cursor, err = protocol.EncodeShortCursor(next); err != nil {
+				return nil, err
+			}
+		}
+		return &page, nil
+	})
 }

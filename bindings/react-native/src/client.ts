@@ -116,6 +116,8 @@ export interface ClientOptions {
   distributionOrigin?: string;
   /** 可重试的失败最多尝试几次，默认 3；0 或 1 表示不重试。 */
   retryAttempts?: number;
+  /** 设备被拒或播放返回空结果时，一次调用最多换几台新的匿名设备，默认 2；0 表示关闭。 */
+  deviceResets?: number;
   /** 新注册设备自称的机型；未填的字段取默认值（小米 14）。 */
   device?: Partial<Device>;
 }
@@ -131,8 +133,8 @@ export interface PlaybackResult {
 
 /** createClientWith 用给定的原生模块创建客户端。 */
 export async function createClientWith(native: Native, options: ClientOptions = {}): Promise<Client> {
-  const { profilePath, log, apiOrigin, registerOrigin, distributionOrigin, retryAttempts = 3, device } = options;
-  const config = JSON.stringify({ apiOrigin, registerOrigin, distributionOrigin, retryAttempts, device });
+  const { profilePath, log, apiOrigin, registerOrigin, distributionOrigin, retryAttempts = 3, deviceResets = 2, device } = options;
+  const config = JSON.stringify({ apiOrigin, registerOrigin, distributionOrigin, retryAttempts, deviceResets, device });
   const res = JSON.parse(native.createClient(profilePath ?? native.defaultProfilePath(), config, !!log));
   if (res.error) throw new OpenhongguoError(res.error);
   const id: number = res.id;
