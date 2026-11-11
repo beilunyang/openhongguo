@@ -139,7 +139,7 @@ func TestListDanmakuStartsFromAPlayPosition(t *testing.T) {
 		}
 	}))
 	ctx := context.Background()
-	page, err := client.ListDanmaku(ctx, "7100000000000101", "7100000000000201", sdk.DanmakuOptions{StartMS: 75000})
+	page, err := client.ListDanmaku(ctx, "7100000000000101", "7100000000000201", sdk.DanmakuOptions{StartMs: 75000})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -154,7 +154,7 @@ func TestListDanmakuStartsFromAPlayPosition(t *testing.T) {
 
 	// Seeking again, in this or another episode of the series, does not read
 	// the series detail again.
-	if _, err := client.ListDanmaku(ctx, "7100000000000101", "7100000000000202", sdk.DanmakuOptions{StartMS: 10000}); err != nil {
+	if _, err := client.ListDanmaku(ctx, "7100000000000101", "7100000000000202", sdk.DanmakuOptions{StartMs: 10000}); err != nil {
 		t.Fatal(err)
 	}
 	if details != 1 {
@@ -166,12 +166,12 @@ func TestListDanmakuStartsFromAPlayPosition(t *testing.T) {
 	}
 
 	// A position past the end has nothing to read.
-	page, err = client.ListDanmaku(ctx, "7100000000000101", "7100000000000201", sdk.DanmakuOptions{StartMS: 91000})
+	page, err = client.ListDanmaku(ctx, "7100000000000101", "7100000000000201", sdk.DanmakuOptions{StartMs: 91000})
 	if err != nil || len(page.Items) != 0 || page.HasMore || len(bodies) != 2 {
 		t.Fatalf("past the end: page %+v err %v, %d requests", page, err, len(bodies))
 	}
 
-	for _, opts := range []sdk.DanmakuOptions{{StartMS: -1}, {StartMS: 1000, Cursor: "m1.x"}} {
+	for _, opts := range []sdk.DanmakuOptions{{StartMs: -1}, {StartMs: 1000, Cursor: "m1.x"}} {
 		if _, err := client.ListDanmaku(ctx, "7100000000000101", "7100000000000201", opts); !errors.Is(err, sdk.ErrInvalidOptions) {
 			t.Fatalf("%+v: err = %v", opts, err)
 		}

@@ -12,16 +12,16 @@ import (
 
 // DanmakuOptions 选择一页弹幕。
 //
-// Cursor 是上一页给出的令牌。Cursor 为空时，从 StartMS（这一集的播放位置，
+// Cursor 是上一页给出的令牌。Cursor 为空时，从 StartMs（这一集的播放位置，
 // 单位毫秒）读起，0 即开头；播放器拖动进度条后，用新的位置重新读。
 // 服务端从包含这个位置的那一段开始返回，所以第一页可能带着这个位置之前
-// 一点的弹幕。Cursor 和 StartMS 只能给一个。
+// 一点的弹幕。Cursor 和 StartMs 只能给一个。
 //
 // PageSize 是一页最多几条，0 取官方播放器的 90；服务端每页给出的条数有上限，
 // 再大也不会更多。
 type DanmakuOptions struct {
 	Cursor   string
-	StartMS  int64
+	StartMs  int64
 	PageSize int
 }
 
@@ -46,11 +46,14 @@ func (c *Client) ListDanmaku(ctx context.Context, seriesID, episodeID string, op
 		if !validID(episodeID) {
 			return nil, fmt.Errorf("invalid episode ID")
 		}
-		if opts.StartMS < 0 {
-			return nil, fmt.Errorf("%w: StartMS is negative", ErrInvalidOptions)
+		// StartMs breaks Go's initialism style on purpose: the bindings name
+		// the option after it, and startMs matches the page's startMs and the
+		// item's offsetMs there.
+		if opts.StartMs < 0 {
+			return nil, fmt.Errorf("%w: StartMs is negative", ErrInvalidOptions)
 		}
-		if opts.Cursor != "" && opts.StartMS != 0 {
-			return nil, fmt.Errorf("%w: pass Cursor or StartMS, not both", ErrInvalidOptions)
+		if opts.Cursor != "" && opts.StartMs != 0 {
+			return nil, fmt.Errorf("%w: pass Cursor or StartMs, not both", ErrInvalidOptions)
 		}
 		cur, err := protocol.DecodeDanmakuCursor(opts.Cursor)
 		if err != nil {
@@ -63,7 +66,7 @@ func (c *Client) ListDanmaku(ctx context.Context, seriesID, episodeID string, op
 			if cur.Duration, err = c.episodeDuration(ctx, seriesID, episodeID); err != nil {
 				return nil, err
 			}
-			cur.Start = opts.StartMS
+			cur.Start = opts.StartMs
 			if cur.Start >= cur.Duration {
 				// Past the end: nothing plays from here.
 				return &model.DanmakuPage{Items: []model.Danmaku{}, StartMS: cur.Start}, nil
