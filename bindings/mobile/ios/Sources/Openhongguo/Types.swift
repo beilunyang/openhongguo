@@ -1821,15 +1821,23 @@ public struct EpisodeOptions: Encodable, Hashable, Sendable {
     }
 }
 
-/// DanmakuOptions 选择一页弹幕。Cursor 是上一页给出的令牌，为空时从这一集的
-/// 开头读起。PageSize 是一页最多几条，0 取官方播放器的 90；服务端每页给出的
-/// 条数有上限，再大也不会更多。
+/// DanmakuOptions 选择一页弹幕。
+///
+/// Cursor 是上一页给出的令牌。Cursor 为空时，从 StartMS（这一集的播放位置，
+/// 单位毫秒）读起，0 即开头；播放器拖动进度条后，用新的位置重新读。
+/// 服务端从包含这个位置的那一段开始返回，所以第一页可能带着这个位置之前
+/// 一点的弹幕。Cursor 和 StartMS 只能给一个。
+///
+/// PageSize 是一页最多几条，0 取官方播放器的 90；服务端每页给出的条数有上限，
+/// 再大也不会更多。
 public struct DanmakuOptions: Encodable, Hashable, Sendable {
     public var cursor: String?
+    public var startMS: Int?
     public var pageSize: Int?
 
-    public init(cursor: String? = nil, pageSize: Int? = nil) {
+    public init(cursor: String? = nil, startMS: Int? = nil, pageSize: Int? = nil) {
         self.cursor = cursor
+        self.startMS = startMS
         self.pageSize = pageSize
     }
 }

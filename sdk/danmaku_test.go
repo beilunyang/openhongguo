@@ -3,6 +3,7 @@ package sdk_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -110,5 +111,69 @@ func TestListDanmakuRejectsBadInput(t *testing.T) {
 	}
 	if _, err := client.ListDanmaku(ctx, "7100000000000101", "7100000000000201", sdk.DanmakuOptions{Cursor: "w1.x"}); err == nil {
 		t.Fatal("malformed cursor accepted")
+	}
+}
+
+func TestListDanmakuStartsFromAPlayPosition(t *testing.T) {
+	var bodies []map[string]any
+	details := 0
+	client, _ := testClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.URL.Path == protocol.PathRegister:
+			_, _ = w.Write(fixture(t, "register-response.json"))
+		case r.URL.Path == protocol.PathSeries:
+			details++
+			_, _ = w.Write(fixture(t, "series-response.json"))
+		case strings.HasPrefix(r.URL.Path, "/novel/commentapi/comment/list/"):
+			body := map[string]any{}
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Error(err)
+			}
+			bodies = append(bodies, body)
+			// The service answers the window that holds the position.
+			_, _ = w.Write([]byte(`{"code":0,"data":{"data_list":[],"common_list_info":{"has_more":true,
+				"cursor":"{\"start_offset_time\":60000,\"end_offset_time\":90000}"},"extra":{"next_query_danmaku_list_time":90000}}}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	ctx := context.Background()
+	page, err := client.ListDanmaku(ctx, "7100000000000101", "7100000000000201", sdk.DanmakuOptions{StartMS: 75000})
+	if err != nil {
+		t.Fatal(err)
+	}
+	param, _ := bodies[0]["business_param"].(map[string]any)
+	if param["start_offset_time"] != float64(75000) || bodies[0]["cursor"] != "" || param["playlet_item_duration"] != float64(91000) {
+		t.Fatalf("body = %v", bodies[0])
+	}
+	// The next window starts at 90 s, before the 91 s end, so there is more.
+	if page.StartMS != 60000 || page.EndMS != 90000 || !page.HasMore || page.Cursor == "" {
+		t.Fatalf("page = %+v", page)
+	}
+
+	// Seeking again, in this or another episode of the series, does not read
+	// the series detail again.
+	if _, err := client.ListDanmaku(ctx, "7100000000000101", "7100000000000202", sdk.DanmakuOptions{StartMS: 10000}); err != nil {
+		t.Fatal(err)
+	}
+	if details != 1 {
+		t.Fatalf("series detail read %d times", details)
+	}
+	param, _ = bodies[1]["business_param"].(map[string]any)
+	if bodies[1]["group_id"] != "7100000000000202" || param["playlet_item_duration"] != float64(96000) {
+		t.Fatalf("second episode body = %v", bodies[1])
+	}
+
+	// A position past the end has nothing to read.
+	page, err = client.ListDanmaku(ctx, "7100000000000101", "7100000000000201", sdk.DanmakuOptions{StartMS: 91000})
+	if err != nil || len(page.Items) != 0 || page.HasMore || len(bodies) != 2 {
+		t.Fatalf("past the end: page %+v err %v, %d requests", page, err, len(bodies))
+	}
+
+	for _, opts := range []sdk.DanmakuOptions{{StartMS: -1}, {StartMS: 1000, Cursor: "m1.x"}} {
+		if _, err := client.ListDanmaku(ctx, "7100000000000101", "7100000000000201", opts); !errors.Is(err, sdk.ErrInvalidOptions) {
+			t.Fatalf("%+v: err = %v", opts, err)
+		}
 	}
 }

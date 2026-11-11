@@ -47,6 +47,8 @@ type Client struct {
 	// deviceResets 是一次调用最多换几台新设备（0 表示不换）。
 	deviceResets int
 	resetter     deviceResetter
+	// durations 记住各集的时长，供 ListDanmaku 使用。
+	durations durationCache
 }
 
 // NewClient 根据 opts 创建客户端。Transport 和 ProfileStore 必填；
