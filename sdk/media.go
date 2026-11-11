@@ -35,7 +35,10 @@ func (c *Client) ResolvePlayback(ctx context.Context, episodeID string, _ Playba
 			return nil, err
 		}
 		ticket := c.clock().UnixMilli()
-		rawQuery, headers := sign.SignPOST(protocol.PathPlayback, protocol.DeviceQueryPairs(c.identity(p)), ticket, p.DeviceID, protocol.VersionName, body, nil)
+		// Playback is signed with the full Argus/Ladon envelope (and without
+		// Medusa); the other endpoints keep using SignPOST / SignGET. See
+		// internal/protocol/sign/playback.go.
+		rawQuery, headers := sign.SignPlaybackPOST(protocol.PathPlayback, protocol.DeviceQueryPairs(c.identity(p)), ticket, p.DeviceID, protocol.VersionName, body, nil)
 		raw, _, err := c.doRaw(ctx, "POST", c.apiOrigin+protocol.PathPlayback+"?"+rawQuery, anonymousHeaders(c, p, ticket, headers), body)
 		if err != nil {
 			return nil, err
