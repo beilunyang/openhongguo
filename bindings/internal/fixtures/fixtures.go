@@ -13,11 +13,12 @@ import (
 
 // routes 把接口路径映射到样本文件。
 var routes = map[string]string{
-	"/service/2/device_register/":     "register-response.json",
-	"/reading/bookapi/bookmall/tab/v": "discover-response.json",
-	"/reading/bookapi/search/tab/v":   "search-response.json",
-	"/novel/player/video_detail/v1/":  "series-response.json",
-	"/novel/player/video_model/v1/":   "drm-playback.json",
+	"/service/2/device_register/":                         "register-response.json",
+	"/reading/bookapi/bookmall/tab/v":                     "discover-response.json",
+	"/reading/bookapi/search/tab/v":                       "search-response.json",
+	"/novel/player/video_detail/v1/":                      "series-response.json",
+	"/novel/player/video_model/v1/":                       "drm-playback.json",
+	"/novel/commentapi/comment/list/7100000000000201/v1/": "danmaku-response.json",
 }
 
 // Handler 返回回放 dir（即 testdata/protocol）下样本的 HTTP 处理器。

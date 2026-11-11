@@ -4,6 +4,8 @@ import type {
   Album,
   CategoryPage,
   ContentKey,
+  DanmakuOptions,
+  DanmakuPage,
   Device,
   DiscoverOptions,
   Episode,
@@ -200,6 +202,10 @@ export class Client {
   /** 一部剧的分集列表。 */
   listEpisodes(seriesId: string, options: EpisodeOptions = {}): Promise<Page<Episode>> {
     return this.#invoke('listEpisodes', seriesId, options);
+  }
+  /** 一集的弹幕，一页；翻到 hasMore 为假为止。 */
+  listDanmaku(seriesId: string, episodeId: string, options: DanmakuOptions = {}): Promise<DanmakuPage> {
+    return this.#invoke('listDanmaku', seriesId, episodeId, options);
   }
   /** 多季剧的全部季。 */
   seasons(seriesId: string): Promise<Album> {

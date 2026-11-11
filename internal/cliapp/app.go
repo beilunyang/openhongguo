@@ -44,6 +44,7 @@ type Service interface {
 	Categories(context.Context, string) (*model.CategoryPage, error)
 	CategoryLanding(context.Context, string, sdk.LandingOptions) (*model.CategoryPage, error)
 	ListEpisodes(context.Context, string, sdk.EpisodeOptions) (*sdk.Page[model.Episode], error)
+	ListDanmaku(context.Context, string, string, sdk.DanmakuOptions) (*model.DanmakuPage, error)
 	ResolvePlayback(context.Context, string, sdk.PlaybackOptions) (*model.Playback, error)
 }
 
@@ -179,6 +180,8 @@ func dispatch(ctx context.Context, args []string, d Dependencies) error {
 		return cmdContinue(ctx, args[1:], d)
 	case "download":
 		return cmdDownload(ctx, args[1:], d)
+	case "danmaku":
+		return cmdDanmaku(ctx, args[1:], d)
 	default:
 		return usage("unknown command %q", args[0])
 	}
@@ -214,6 +217,7 @@ const helpText = `ohg — anonymous short-drama catalog and playback
   ohg continue [play flags]
   ohg download <series-id|title> [--pick] [--episodes 1-10,12] [--dir PATH]
                           [--jobs N] [--quality Q]
+  ohg danmaku <series-id|title> [--pick] [--episode N] [--json]
   ohg history [--json]
   ohg history clear
   ohg device show
@@ -221,8 +225,8 @@ const helpText = `ohg — anonymous short-drama catalog and playback
 
 Every command is anonymous. There is no login.
 
-play and download take a series ID or a title. A title is searched and the
-best match is used; --pick lists the matches to choose from.
+play, download and danmaku take a series ID or a title. A title is searched
+and the best match is used; --pick lists the matches to choose from.
 
 play resolves the service media model and streams it without writing a
 file: ffplay and mpv decrypt a cenc-aes-ctr stream themselves, so seeking
@@ -242,7 +246,10 @@ watched to the end; continue resumes the most recent series.
 
 download saves every listed episode (default: all) as 第NNN集.mp4 under
 --dir (default: the series title), --jobs at a time (default 3). Episodes
-already saved are skipped, so an interrupted download can be run again.`
+already saved are skipped, so an interrupted download can be run again.
+
+danmaku prints the 弹幕 of one episode (default: the first) as play time and
+text. The service serves a selection of them, which differs between devices.`
 
 func requireService(d Dependencies) error {
 	if d.Service == nil {

@@ -140,6 +140,10 @@ class OpenhongguoClient internal constructor(private val engine: Engine) {
     suspend fun listEpisodes(seriesId: String, options: EpisodeOptions = EpisodeOptions()): Page<Episode> =
         page(call("listEpisodes", seriesId, options.toJson()), Episode::fromJson)
 
+    /** 一集的弹幕，一页；翻到 hasMore 为假为止。 */
+    suspend fun listDanmaku(seriesId: String, episodeId: String, options: DanmakuOptions = DanmakuOptions()): DanmakuPage =
+        DanmakuPage.fromJson(call("listDanmaku", seriesId, episodeId, options.toJson()).asObject())
+
     /** 多季剧的全部季。 */
     suspend fun seasons(seriesId: String): Album = Album.fromJson(call("seasons", seriesId).asObject())
 

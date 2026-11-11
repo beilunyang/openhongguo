@@ -485,6 +485,34 @@ type Work struct {
 	Plays int64 `json:"plays,omitempty"`
 }
 
+// DanmakuPage 是一集弹幕的一页：服务端按播放时间划出的一段（2026-11-11
+// 实测为 30 秒）。
+type DanmakuPage struct {
+	// Items 按出现时间排序。这一段没有弹幕时为空，但 HasMore 仍可能为真。
+	Items []Danmaku `json:"items"`
+	// StartMS 和 EndMS 是这一页覆盖的播放时间，单位毫秒。
+	StartMS int64 `json:"start_ms"`
+	EndMS   int64 `json:"end_ms,omitempty"`
+	// Total 是服务端统计的本集弹幕总数，服务端给出时才有（有些设备拿不到）。
+	// 服务端只下发其中精选的一部分，所以它通常远大于能取到的条数。
+	Total   int64  `json:"total,omitempty"`
+	HasMore bool   `json:"has_more"`
+	Cursor  string `json:"cursor,omitempty"`
+}
+
+// Danmaku 是一条弹幕。它不带发送者的身份。
+type Danmaku struct {
+	ID   string `json:"id"`
+	Text string `json:"text"`
+	// OffsetMS 是弹幕在分集里出现的时间，单位毫秒。
+	OffsetMS int64 `json:"offset_ms"`
+	// CreatedAt 是发送时间。
+	CreatedAt time.Time `json:"created_at,omitempty"`
+	// Likes 是点赞数；PlusOnes 是其他观众跟发 "+1" 的次数。
+	Likes    int64 `json:"likes,omitempty"`
+	PlusOnes int64 `json:"plus_ones,omitempty"`
+}
+
 // HotSearch 是查询前的搜索页：猜你想搜一行，以及其下的热榜。
 type HotSearch struct {
 	Guesses []HotItem  `json:"guesses,omitempty"`

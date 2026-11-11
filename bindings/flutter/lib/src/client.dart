@@ -241,6 +241,11 @@ class OpenhongguoClient {
   Future<PagedResult<Episode>> listEpisodes(String seriesId, [EpisodeOptions options = const EpisodeOptions()]) async =>
       PagedResult._fromJson(await _call('listEpisodes', [seriesId, options.toJson()]), Episode.fromJson);
 
+  /// 一集的弹幕，一页；翻到 hasMore 为假为止。
+  Future<DanmakuPage> listDanmaku(String seriesId, String episodeId,
+          [DanmakuOptions options = const DanmakuOptions()]) async =>
+      DanmakuPage.fromJson(_asMap(await _call('listDanmaku', [seriesId, episodeId, options.toJson()])));
+
   /// 多季剧的全部季。
   Future<Album> seasons(String seriesId) async => Album.fromJson(_asMap(await _call('seasons', [seriesId])));
 

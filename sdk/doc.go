@@ -24,6 +24,7 @@
 //     [Client.HotSearch]、[Client.SearchCues] 和 [Client.NewReleases]。
 //   - 短剧与分集：[Client.GetSeries]、[Client.GetSeriesBatch]、
 //     [Client.ListEpisodes]、[Client.Seasons] 和 [Client.SeriesRecommend]。
+//   - 弹幕：[Client.ListDanmaku]。
 //   - 榜单与筛选：[Client.ShortRank]、[Client.ShortFilterPanel]、
 //     [Client.ShortFilter]、[Client.Ranking]、[Client.RankRows] 和
 //     [Client.RankGroups]。

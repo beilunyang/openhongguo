@@ -21,7 +21,7 @@ import (
 
 // QueryTypes 是 sdk 包里作为参数传入的结构体。
 var QueryTypes = []string{
-	"DiscoverOptions", "SearchOptions", "EpisodeOptions", "LandingOptions",
+	"DiscoverOptions", "SearchOptions", "EpisodeOptions", "DanmakuOptions", "LandingOptions",
 	"NewReleaseQuery", "ShortFilterQuery", "ShortRankQuery",
 }
 

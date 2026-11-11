@@ -2,6 +2,8 @@ import type {
   Album,
   CategoryPage,
   ContentKey,
+  DanmakuOptions,
+  DanmakuPage,
   Device,
   DiscoverOptions,
   Episode,
@@ -160,6 +162,8 @@ export declare class Client {
   getSeriesBatch(seriesIds: string[]): Promise<SeriesDetail[]>;
   /** 一部剧的分集列表。 */
   listEpisodes(seriesId: string, options?: EpisodeOptions): Promise<Page<Episode>>;
+  /** 一集的弹幕，一页；翻到 hasMore 为假为止。 */
+  listDanmaku(seriesId: string, episodeId: string, options?: DanmakuOptions): Promise<DanmakuPage>;
   /** 多季剧的全部季。 */
   seasons(seriesId: string): Promise<Album>;
   /** 一部剧的相关推荐。 */

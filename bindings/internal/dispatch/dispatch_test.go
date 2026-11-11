@@ -74,6 +74,21 @@ func TestCall(t *testing.T) {
 		t.Fatalf("listEpisodes = %+v", episodes)
 	}
 
+	var danmaku struct {
+		Items []struct {
+			Text     string `json:"text"`
+			OffsetMS int64  `json:"offset_ms"`
+		} `json:"items"`
+		HasMore bool   `json:"has_more"`
+		Cursor  string `json:"cursor"`
+	}
+	if err := call(t, c, "listDanmaku", `["7100000000000101","7100000000000201",{"pageSize":120}]`, &danmaku); err != nil {
+		t.Fatal(err)
+	}
+	if len(danmaku.Items) != 2 || danmaku.Items[0].OffsetMS != 329 || !danmaku.HasMore || danmaku.Cursor == "" {
+		t.Fatalf("listDanmaku = %+v", danmaku)
+	}
+
 	var pb struct {
 		Playback        struct{ Protected bool } `json:"playback"`
 		ContentKey      *struct{}                `json:"contentKey"`

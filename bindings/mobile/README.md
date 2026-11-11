@@ -136,6 +136,7 @@ Swift 包从 GitHub Release 下载 Go 编译出的 xcframework。最低系统版
 | `getSeries(seriesId)` | 加载一部短剧的详情 |
 | `getSeriesBatch(seriesIds)` | 加载多部短剧及其分集，按请求顺序返回 |
 | `listEpisodes(seriesId, options)` | 加载一部短剧的分集列表 |
+| `listDanmaku(seriesId, episodeId, options)` | 加载一集的弹幕，一次一页 |
 | `seasons(seriesId)` | 列出多季短剧的全部季 |
 | `seriesRecommend(seriesId)` | 加载一部短剧的相关推荐 |
 | `getAlbum(albumId)` | 加载一个合集（多季合集）及其各季 |

@@ -61,7 +61,8 @@ func (c Check) OK() bool { return c.Err == nil && len(c.Drifts) == 0 }
 // Run calls the live service the way the CLI does and checks every
 // response against its fixture, then checks that the results are usable:
 // a search finds the series, the series lists episodes, the playback model
-// has streams, and a protected stream's derived key decrypts a frame.
+// has streams, a protected stream's derived key decrypts a frame, and the
+// first episode has 弹幕.
 func Run(ctx context.Context, cfg Config) []Check {
 	rec := &recorder{next: cfg.Transport, bodies: map[string][]byte{}}
 	client, err := sdk.NewClient(sdk.Options{
@@ -85,6 +86,7 @@ func Run(ctx context.Context, cfg Config) []Check {
 		return checks
 	}
 	checks = append(checks, playSeries(ctx, client, rec, cfg, "series", seriesID, "")...)
+	checks = append(checks, danmaku(ctx, client, rec, cfg, seriesID))
 	checks = append(checks, browse(ctx, client, rec, cfg, seriesID)...)
 	if cfg.MovieSeriesID != "" {
 		checks = append(checks, playSeries(ctx, client, rec, cfg, "movie", cfg.MovieSeriesID, "dynamic-playback.json")...)
@@ -354,6 +356,32 @@ func playSeries(ctx context.Context, client *sdk.Client, rec *recorder, cfg Conf
 		key.Err = decryptsFrame(ctx, cfg.FFmpeg, stream.URL, k.Hex)
 	}
 	return append(checks, key)
+}
+
+// danmaku checks the first episode's 弹幕. A window can be empty, and an
+// empty list has no row fields to compare, so it pages to the first window
+// with rows.
+func danmaku(ctx context.Context, client *sdk.Client, rec *recorder, cfg Config, seriesID string) Check {
+	page, err := client.ListEpisodes(ctx, seriesID, sdk.EpisodeOptions{})
+	if err == nil && len(page.Items) == 0 {
+		err = errors.New("series lists no episodes")
+	}
+	if err != nil {
+		return Check{Name: "danmaku", Err: err}
+	}
+	episode := page.Items[0].ID
+	opts := sdk.DanmakuOptions{}
+	for i := 0; ; i++ {
+		dm, err := client.ListDanmaku(ctx, seriesID, episode, opts)
+		if err == nil && len(dm.Items) == 0 {
+			if dm.HasMore && i < 10 {
+				opts.Cursor = dm.Cursor
+				continue
+			}
+			err = errors.New("danmaku list is empty")
+		}
+		return rec.check(cfg, "danmaku", "danmaku-response.json", fmt.Sprintf(protocol.PathDanmaku, episode), err)
+	}
 }
 
 func checkEpisodes(items []model.Episode) error {

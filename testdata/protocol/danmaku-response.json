@@ -1,0 +1,72 @@
+{
+  "code": 0,
+  "message": "请求成功",
+  "data": {
+    "common_list_info": {
+      "cursor": "{\"start_offset_time\":0,\"end_offset_time\":30000}",
+      "has_more": true
+    },
+    "data_list": [
+      {
+        "data_type": 4,
+        "comment": {
+          "comment_id": "7100000000002102",
+          "common": {
+            "content": {
+              "text": "Fixture danmaku two"
+            },
+            "create_timestamp": 1787839400
+          },
+          "expand": {
+            "offset_time": 12500
+          },
+          "stat": {
+            "digg_count": 0,
+            "add_one_count": 2
+          }
+        }
+      },
+      {
+        "data_type": 4,
+        "comment": {
+          "comment_id": "7100000000002101",
+          "common": {
+            "content": {
+              "text": "Fixture danmaku one"
+            },
+            "create_timestamp": 1787839345
+          },
+          "expand": {
+            "offset_time": 329
+          },
+          "stat": {
+            "digg_count": 15,
+            "add_one_count": 7
+          }
+        }
+      },
+      {
+        "data_type": 4,
+        "comment": {
+          "comment_id": "7100000000002103",
+          "common": {
+            "content": {
+              "text": "  "
+            },
+            "create_timestamp": 1787839500
+          },
+          "expand": {
+            "offset_time": 20000
+          },
+          "stat": {
+            "digg_count": 0,
+            "add_one_count": 0
+          }
+        }
+      }
+    ],
+    "extra": {
+      "next_query_danmaku_list_time": 30000
+    }
+  }
+}

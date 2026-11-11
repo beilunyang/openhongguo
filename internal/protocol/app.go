@@ -41,6 +41,9 @@ const (
 	PathSubscribeList = "/reading/user/subscribe/list/v1/"
 	PathProfile       = "/reading/user/profile/get/v1/"
 	PathUserWorks     = "/novel/commentapi/user/profile/%s/v1"
+	// PathDanmaku is the comment list the player's 弹幕 layer reads; %s is
+	// the episode id (observed 2026-11-11).
+	PathDanmaku = "/novel/commentapi/comment/list/%s/v1/"
 	// DefaultRankCell is the bookmall cell the 经典 channel serves for the
 	// ranking page (observed: algo 179 推荐榜).
 	DefaultRankCell = "7224069876808155173"
