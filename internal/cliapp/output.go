@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"unicode"
 
 	"github.com/beilunyang/openhongguo/internal/history"
 	"github.com/beilunyang/openhongguo/sdk"
@@ -36,7 +37,16 @@ func boardChoices(boards []model.RankBoard, selected string) string {
 	return strings.Join(parts, " ")
 }
 
+// oneLine folds s onto one line for text output. Control and bidi characters
+// become spaces first: 弹幕 are written by anyone, and an escape sequence in
+// one must not reach the terminal.
 func oneLine(s string) string {
+	s = strings.Map(func(r rune) rune {
+		if unicode.IsControl(r) || unicode.Is(unicode.Bidi_Control, r) {
+			return ' '
+		}
+		return r
+	}, s)
 	return strings.Join(strings.Fields(s), " ")
 }
 

@@ -76,3 +76,10 @@ func TestCLIDanmakuRejectsMissingEpisode(t *testing.T) {
 		t.Fatalf("danmaku read for a missing episode: %q", svc.danmakuCalls)
 	}
 }
+
+func TestOneLineDropsTerminalControls(t *testing.T) {
+	in := "a\x1b]52;c;cHduZWQ=\x07b\u009b2Jc\u202ed\n\te"
+	if got := oneLine(in); strings.ContainsAny(got, "\x1b\x07\u009b\u202e\n\t") || got != "a ]52;c;cHduZWQ= b 2Jc d e" {
+		t.Fatalf("oneLine = %q", got)
+	}
+}
