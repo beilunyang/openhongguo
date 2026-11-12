@@ -160,6 +160,90 @@ public struct ContentType: RawRepresentable, Codable, Hashable, Sendable {
     public static let motionComic = ContentType(rawValue: 1004)
 }
 
+/// Danmaku 是一条弹幕。它不带发送者的身份。
+public struct Danmaku: Codable, Hashable, Sendable {
+    public var id: String
+    public var text: String
+    /// OffsetMS 是弹幕在分集里出现的时间，单位毫秒。
+    public var offsetMs: Int
+    /// CreatedAt 是发送时间。
+    public var createdAt: String
+    /// Likes 是点赞数；PlusOnes 是其他观众跟发 "+1" 的次数。
+    public var likes: Int
+    public var plusOnes: Int
+
+    public init(id: String = "", text: String = "", offsetMs: Int = 0, createdAt: String = "", likes: Int = 0, plusOnes: Int = 0) {
+        self.id = id
+        self.text = text
+        self.offsetMs = offsetMs
+        self.createdAt = createdAt
+        self.likes = likes
+        self.plusOnes = plusOnes
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case text
+        case offsetMs = "offset_ms"
+        case createdAt = "created_at"
+        case likes
+        case plusOnes = "plus_ones"
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = try c.decodeIfPresent(String.self, forKey: .id) ?? ""
+        self.text = try c.decodeIfPresent(String.self, forKey: .text) ?? ""
+        self.offsetMs = try c.decodeIfPresent(Int.self, forKey: .offsetMs) ?? 0
+        self.createdAt = try c.decodeIfPresent(String.self, forKey: .createdAt) ?? ""
+        self.likes = try c.decodeIfPresent(Int.self, forKey: .likes) ?? 0
+        self.plusOnes = try c.decodeIfPresent(Int.self, forKey: .plusOnes) ?? 0
+    }
+}
+
+/// DanmakuPage 是一集弹幕的一页：服务端按播放时间划出的一段（2026-11-11
+/// 实测为 30 秒）。
+public struct DanmakuPage: Codable, Hashable, Sendable {
+    /// Items 按出现时间排序。这一段没有弹幕时为空，但 HasMore 仍可能为真。
+    public var items: [Danmaku]
+    /// StartMS 和 EndMS 是这一页覆盖的播放时间，单位毫秒。
+    public var startMs: Int
+    public var endMs: Int
+    /// Total 是服务端统计的本集弹幕总数，服务端给出时才有（有些设备拿不到）。
+    /// 服务端只下发其中精选的一部分，所以它通常远大于能取到的条数。
+    public var total: Int
+    public var hasMore: Bool
+    public var cursor: String
+
+    public init(items: [Danmaku] = [], startMs: Int = 0, endMs: Int = 0, total: Int = 0, hasMore: Bool = false, cursor: String = "") {
+        self.items = items
+        self.startMs = startMs
+        self.endMs = endMs
+        self.total = total
+        self.hasMore = hasMore
+        self.cursor = cursor
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case items
+        case startMs = "start_ms"
+        case endMs = "end_ms"
+        case total
+        case hasMore = "has_more"
+        case cursor
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.items = try c.decodeIfPresent([Danmaku].self, forKey: .items) ?? []
+        self.startMs = try c.decodeIfPresent(Int.self, forKey: .startMs) ?? 0
+        self.endMs = try c.decodeIfPresent(Int.self, forKey: .endMs) ?? 0
+        self.total = try c.decodeIfPresent(Int.self, forKey: .total) ?? 0
+        self.hasMore = try c.decodeIfPresent(Bool.self, forKey: .hasMore) ?? false
+        self.cursor = try c.decodeIfPresent(String.self, forKey: .cursor) ?? ""
+    }
+}
+
 /// Device 是匿名身份出示的手机。注册请求体、
 /// 每个请求的设备参数和 User-Agent 都描述它，所以一个设备 id 始终对应一个机型。
 public struct Device: Codable, Hashable, Sendable {
@@ -1733,6 +1817,27 @@ public struct EpisodeOptions: Encodable, Hashable, Sendable {
 
     public init(cursor: String? = nil, pageSize: Int? = nil) {
         self.cursor = cursor
+        self.pageSize = pageSize
+    }
+}
+
+/// DanmakuOptions 选择一页弹幕。
+///
+/// Cursor 是上一页给出的令牌。Cursor 为空时，从 StartMs（这一集的播放位置，
+/// 单位毫秒）读起，0 即开头；播放器拖动进度条后，用新的位置重新读。
+/// 服务端从包含这个位置的那一段开始返回，所以第一页可能带着这个位置之前
+/// 一点的弹幕。Cursor 和 StartMs 只能给一个。
+///
+/// PageSize 是一页最多几条，0 取官方播放器的 90；服务端每页给出的条数有上限，
+/// 再大也不会更多。
+public struct DanmakuOptions: Encodable, Hashable, Sendable {
+    public var cursor: String?
+    public var startMs: Int?
+    public var pageSize: Int?
+
+    public init(cursor: String? = nil, startMs: Int? = nil, pageSize: Int? = nil) {
+        self.cursor = cursor
+        self.startMs = startMs
         self.pageSize = pageSize
     }
 }

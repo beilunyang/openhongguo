@@ -107,6 +107,17 @@ var methods = map[string]method{
 		}
 		return c.ListEpisodes(ctx, id, o)
 	},
+	"listDanmaku": func(ctx context.Context, c *sdk.Client, a []json.RawMessage) (any, error) {
+		var series, episode string
+		var o sdk.DanmakuOptions
+		if err := args2(a, &series, &episode); err != nil {
+			return nil, err
+		}
+		if err := arg(a, 2, &o); err != nil {
+			return nil, err
+		}
+		return c.ListDanmaku(ctx, series, episode, o)
+	},
 	"seasons":         oneString(func(ctx context.Context, c *sdk.Client, id string) (any, error) { return c.Seasons(ctx, id) }),
 	"seriesRecommend": oneString(func(ctx context.Context, c *sdk.Client, id string) (any, error) { return c.SeriesRecommend(ctx, id) }),
 	"getAlbum": oneString(func(ctx context.Context, c *sdk.Client, id string) (any, error) {

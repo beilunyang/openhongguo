@@ -16,6 +16,7 @@ const routes = {
   '/reading/bookapi/search/tab/v': 'search-response.json',
   '/novel/player/video_detail/v1/': 'series-response.json',
   '/novel/player/video_model/v1/': 'drm-playback.json',
+  '/novel/commentapi/comment/list/7100000000000201/v1/': 'danmaku-response.json',
 };
 
 let server;
@@ -62,6 +63,17 @@ test('搜索、剧集详情和分集', async () => {
   const episodes = await c.listEpisodes('7100000000000101');
   assert.equal(episodes.items[0].number, 1);
   assert.equal(episodes.items[0].id, '7100000000000201');
+});
+
+test('一集的弹幕按出现时间排好，带着下一页的游标', async () => {
+  const c = await client(memoryProfileStore());
+  const page = await c.listDanmaku('7100000000000101', '7100000000000201');
+  assert.deepEqual(page.items.map((d) => [d.offset_ms, d.text]), [
+    [329, 'Fixture danmaku one'],
+    [12500, 'Fixture danmaku two'],
+  ]);
+  assert.equal(page.has_more, true);
+  assert.ok(page.cursor);
 });
 
 test('加密剧集返回播放模型，密钥推导失败时说明原因', async () => {

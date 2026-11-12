@@ -150,6 +150,82 @@ value class ContentType(val value: Int) {
     }
 }
 
+/** Danmaku 是一条弹幕。它不带发送者的身份。 */
+data class Danmaku(
+    val id: String = "",
+    val text: String = "",
+    /** OffsetMS 是弹幕在分集里出现的时间，单位毫秒。 */
+    val offsetMs: Long = 0L,
+    /** CreatedAt 是发送时间。 */
+    val createdAt: String = "",
+    /** Likes 是点赞数；PlusOnes 是其他观众跟发 "+1" 的次数。 */
+    val likes: Long = 0L,
+    val plusOnes: Long = 0L,
+) {
+    /** 编码成与 Go SDK 相同的 JSON。 */
+    fun toJson(): JSONObject = JSONObject().apply {
+        put("id", id)
+        put("text", text)
+        put("offset_ms", offsetMs)
+        put("created_at", createdAt)
+        put("likes", likes)
+        put("plus_ones", plusOnes)
+    }
+
+    companion object {
+        /** 从 Go SDK 输出的 JSON 解码；缺省的字段取零值。 */
+        fun fromJson(o: JSONObject): Danmaku = Danmaku(
+            id = o.opt("id").asString(),
+            text = o.opt("text").asString(),
+            offsetMs = o.opt("offset_ms").asLong(),
+            createdAt = o.opt("created_at").asString(),
+            likes = o.opt("likes").asLong(),
+            plusOnes = o.opt("plus_ones").asLong(),
+        )
+    }
+}
+
+/**
+ * DanmakuPage 是一集弹幕的一页：服务端按播放时间划出的一段（2026-11-11
+ * 实测为 30 秒）。
+ */
+data class DanmakuPage(
+    /** Items 按出现时间排序。这一段没有弹幕时为空，但 HasMore 仍可能为真。 */
+    val items: List<Danmaku> = emptyList(),
+    /** StartMS 和 EndMS 是这一页覆盖的播放时间，单位毫秒。 */
+    val startMs: Long = 0L,
+    val endMs: Long = 0L,
+    /**
+     * Total 是服务端统计的本集弹幕总数，服务端给出时才有（有些设备拿不到）。
+     * 服务端只下发其中精选的一部分，所以它通常远大于能取到的条数。
+     */
+    val total: Long = 0L,
+    val hasMore: Boolean = false,
+    val cursor: String = "",
+) {
+    /** 编码成与 Go SDK 相同的 JSON。 */
+    fun toJson(): JSONObject = JSONObject().apply {
+        put("items", JSONArray(items.map { it.toJson() }))
+        put("start_ms", startMs)
+        put("end_ms", endMs)
+        put("total", total)
+        put("has_more", hasMore)
+        put("cursor", cursor)
+    }
+
+    companion object {
+        /** 从 Go SDK 输出的 JSON 解码；缺省的字段取零值。 */
+        fun fromJson(o: JSONObject): DanmakuPage = DanmakuPage(
+            items = o.opt("items").asList { Danmaku.fromJson(it.asObject()) },
+            startMs = o.opt("start_ms").asLong(),
+            endMs = o.opt("end_ms").asLong(),
+            total = o.opt("total").asLong(),
+            hasMore = o.opt("has_more").asBoolean(),
+            cursor = o.opt("cursor").asString(),
+        )
+    }
+}
+
 /**
  * Device 是匿名身份出示的手机。注册请求体、
  * 每个请求的设备参数和 User-Agent 都描述它，所以一个设备 id 始终对应一个机型。
@@ -1551,6 +1627,29 @@ data class EpisodeOptions(
 ) {
     internal fun toJson(): JSONObject = JSONObject().apply {
         cursor?.let { put("cursor", it) }
+        pageSize?.let { put("pageSize", it) }
+    }
+}
+
+/**
+ * DanmakuOptions 选择一页弹幕。
+ *
+ * Cursor 是上一页给出的令牌。Cursor 为空时，从 StartMs（这一集的播放位置，
+ * 单位毫秒）读起，0 即开头；播放器拖动进度条后，用新的位置重新读。
+ * 服务端从包含这个位置的那一段开始返回，所以第一页可能带着这个位置之前
+ * 一点的弹幕。Cursor 和 StartMs 只能给一个。
+ *
+ * PageSize 是一页最多几条，0 取官方播放器的 90；服务端每页给出的条数有上限，
+ * 再大也不会更多。
+ */
+data class DanmakuOptions(
+    val cursor: String? = null,
+    val startMs: Long? = null,
+    val pageSize: Int? = null,
+) {
+    internal fun toJson(): JSONObject = JSONObject().apply {
+        cursor?.let { put("cursor", it) }
+        startMs?.let { put("startMs", it) }
         pageSize?.let { put("pageSize", it) }
     }
 }

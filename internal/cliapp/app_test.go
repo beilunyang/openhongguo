@@ -287,6 +287,10 @@ func (c *captureService) ResolvePlayback(context.Context, string, sdk.PlaybackOp
 	return nil, errors.New("unused")
 }
 
+func (c *captureService) ListDanmaku(context.Context, string, string, sdk.DanmakuOptions) (*model.DanmakuPage, error) {
+	return nil, errors.New("unused")
+}
+
 func TestCLIPassesChannelAndSearchTab(t *testing.T) {
 	svc := &captureService{}
 	deps := Dependencies{Service: svc, Stdout: io.Discard, Stderr: io.Discard}
@@ -400,6 +404,10 @@ type playService struct {
 	playback  *model.Playback
 	playErr   error
 	episodeID string
+	// danmaku is served one page per call; danmakuCalls records each call's
+	// episode ID and cursor.
+	danmaku      []*model.DanmakuPage
+	danmakuCalls []string
 }
 
 func (s *playService) Discover(context.Context, sdk.DiscoverOptions) (*sdk.Page[model.SeriesSummary], error) {
@@ -493,6 +501,14 @@ func (s *playService) ListEpisodes(context.Context, string, sdk.EpisodeOptions) 
 func (s *playService) ResolvePlayback(_ context.Context, episodeID string, _ sdk.PlaybackOptions) (*model.Playback, error) {
 	s.episodeID = episodeID
 	return s.playback, s.playErr
+}
+
+func (s *playService) ListDanmaku(_ context.Context, _, episodeID string, opts sdk.DanmakuOptions) (*model.DanmakuPage, error) {
+	s.danmakuCalls = append(s.danmakuCalls, episodeID+" "+opts.Cursor)
+	if len(s.danmakuCalls) > len(s.danmaku) {
+		return nil, errors.New("no more danmaku pages")
+	}
+	return s.danmaku[len(s.danmakuCalls)-1], nil
 }
 
 type fakeMedia struct {
@@ -1220,6 +1236,8 @@ func TestShortRankFilterAndCuesCommands(t *testing.T) {
 		{"filter", "extra"},
 		{"new", "extra"},
 		{"person"},
+		{"danmaku"},
+		{"danmaku", "7100000000000101", "--episode", "0"},
 		{"browse"},
 	} {
 		if code, _ := run(args...); code != ExitUsage {

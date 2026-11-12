@@ -67,6 +67,15 @@ final class FixtureTests: XCTestCase {
         XCTAssertEqual(episodes.items.first?.id, "7100000000000201")
     }
 
+    func testDanmaku() async throws {
+        let (c, _) = try client()
+        let page = try await c.listDanmaku("7100000000000101", episodeId: "7100000000000201")
+        XCTAssertEqual(page.items.map(\.offsetMs), [329, 12500])
+        XCTAssertEqual(page.items.first?.text, "Fixture danmaku one")
+        XCTAssertTrue(page.hasMore)
+        XCTAssertFalse(page.cursor.isEmpty)
+    }
+
     func testProtectedPlaybackWithoutKey() async throws {
         let (c, _) = try client()
         let r = try await c.resolvePlayback("7100000000000201")

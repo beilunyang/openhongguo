@@ -225,6 +225,9 @@ export class Client {
   listEpisodes(seriesId, options = {}) {
     return this.#invoke('listEpisodes', seriesId, options);
   }
+  listDanmaku(seriesId, episodeId, options = {}) {
+    return this.#invoke('listDanmaku', seriesId, episodeId, options);
+  }
   seasons(seriesId) {
     return this.#invoke('seasons', seriesId);
   }

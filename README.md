@@ -12,7 +12,7 @@
 [![pub downloads](https://img.shields.io/pub/dm/openhongguo?label=pub%20downloads)](https://pub.dev/packages/openhongguo)
 [![CLI downloads](https://img.shields.io/github/downloads/beilunyang/openhongguo/total?label=CLI%20downloads)](https://github.com/beilunyang/openhongguo/releases)
 
-openhongguo 是红果短剧（Hongguo）的非官方 SDK，提供 Go、Node.js、Android、iOS、React Native 和 Flutter 版本。SDK 可以浏览短剧目录、搜索短剧、读取短剧和分集的详情，并取得分集的播放地址和内容密钥。
+openhongguo 是红果短剧（Hongguo）的非官方 SDK，提供 Go、Node.js、Android、iOS、React Native 和 Flutter 版本。SDK 可以浏览短剧目录、搜索短剧、读取短剧和分集的详情与弹幕，并取得分集的播放地址和内容密钥。
 
 SDK 用匿名设备发送所有请求，不需要登录。Go 以外的 SDK 都由 Go SDK 编译而成，所以各语言的行为相同。
 
@@ -313,6 +313,7 @@ type Transport interface {
 | `GetSeries` | `getSeries(seriesId)` | 加载一部短剧的详情 |
 | `GetSeriesBatch` | `getSeriesBatch(seriesIds)` | 加载多部短剧及其分集，按请求顺序返回 |
 | `ListEpisodes` | `listEpisodes(seriesId, options)` | 加载一部短剧的分集列表 |
+| `ListDanmaku` | `listDanmaku(seriesId, episodeId, options)` | 加载一集的弹幕，一次一页 |
 | `Seasons` | `seasons(seriesId)` | 列出多季短剧的全部季 |
 | `SeriesRecommend` | `seriesRecommend(seriesId)` | 加载一部短剧的相关推荐 |
 | `GetAlbum` | `getAlbum(albumId)` | 加载一个合集（多季合集）及其各季 |

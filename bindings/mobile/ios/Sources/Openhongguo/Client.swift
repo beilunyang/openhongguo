@@ -283,6 +283,11 @@ public final class OpenhongguoClient: Sendable {
         try await call("listEpisodes", seriesId, options)
     }
 
+    /// 一集的弹幕，一页；翻到 hasMore 为假为止。
+    public func listDanmaku(_ seriesId: String, episodeId: String, options: DanmakuOptions = DanmakuOptions()) async throws -> DanmakuPage {
+        try await call("listDanmaku", seriesId, episodeId, options)
+    }
+
     /// 多季剧的全部季。
     public func seasons(_ seriesId: String) async throws -> Album {
         try await call("seasons", seriesId)

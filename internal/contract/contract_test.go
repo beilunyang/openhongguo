@@ -89,6 +89,9 @@ func (f *fixtureTransport) Do(_ context.Context, req *sdk.Request) (*sdk.Respons
 	if strings.HasPrefix(u.Path, "/novel/commentapi/user/profile/") {
 		return f.file("person-works.json"), nil
 	}
+	if strings.HasPrefix(u.Path, "/novel/commentapi/comment/list/") {
+		return f.file("danmaku-response.json"), nil
+	}
 	if u.Path == protocol.PathSeriesBatch {
 		return f.file("series-batch.json"), nil
 	}
@@ -143,7 +146,7 @@ func TestRunPassesWhenServiceMatchesFixtures(t *testing.T) {
 			t.Errorf("%s: err=%v drifts=%v", c.Name, c.Err, c.Drifts)
 		}
 	}
-	if strings.Join(names, ",") != "discover,register,search,series detail,series playback,suggest,related,seasons,series batch,hot search,category,landing,rank rows,filter panel,short filter,short rank,actor rank,person,person works,new releases,cues" {
+	if strings.Join(names, ",") != "discover,register,search,series detail,series playback,danmaku,suggest,related,seasons,series batch,hot search,category,landing,rank rows,filter panel,short filter,short rank,actor rank,person,person works,new releases,cues" {
 		t.Fatalf("checks = %v", names)
 	}
 }

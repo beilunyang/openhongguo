@@ -71,6 +71,32 @@ ContentType 是视频的 content_type，取自 com.dragon.read.rpc.model.VideoCo
 | `ContentAlbum` | `1003` | 合集 |
 | `ContentMotionComic` | `1004` | 漫剧（动态漫） |
 
+### Danmaku
+
+Danmaku 是一条弹幕。它不带发送者的身份。
+
+| 字段 | 驼峰 | 类型 | 说明 |
+|---|---|---|---|
+| `id` | `id` | string |  |
+| `text` | `text` | string |  |
+| `offset_ms` | `offsetMs` | int64 | OffsetMS 是弹幕在分集里出现的时间，单位毫秒。 |
+| `created_at` | `createdAt` | 时间（RFC 3339 字符串） | CreatedAt 是发送时间。 |
+| `likes` | `likes` | int64 | Likes 是点赞数；PlusOnes 是其他观众跟发 "+1" 的次数。 |
+| `plus_ones` | `plusOnes` | int64 |  |
+
+### DanmakuPage
+
+DanmakuPage 是一集弹幕的一页：服务端按播放时间划出的一段（2026-11-11 实测为 30 秒）。
+
+| 字段 | 驼峰 | 类型 | 说明 |
+|---|---|---|---|
+| `items` | `items` | [Danmaku](#danmaku) 列表 | Items 按出现时间排序。这一段没有弹幕时为空，但 HasMore 仍可能为真。 |
+| `start_ms` | `startMs` | int64 | StartMS 和 EndMS 是这一页覆盖的播放时间，单位毫秒。 |
+| `end_ms` | `endMs` | int64 |  |
+| `total` | `total` | int64 | Total 是服务端统计的本集弹幕总数，服务端给出时才有（有些设备拿不到）。服务端只下发其中精选的一部分，所以它通常远大于能取到的条数。 |
+| `has_more` | `hasMore` | bool |  |
+| `cursor` | `cursor` | string |  |
+
 ### Device
 
 Device 是匿名身份出示的手机。注册请求体、每个请求的设备参数和 User-Agent 都描述它，所以一个设备 id 始终对应一个机型。
@@ -620,6 +646,20 @@ EpisodeOptions 选择一个分集页。游标不在第 1 阶段的范围内。
 | 字段 | 类型 | 说明 |
 |---|---|---|
 | `cursor` | string |  |
+| `pageSize` | int |  |
+
+### DanmakuOptions
+
+DanmakuOptions 选择一页弹幕。
+
+Cursor 是上一页给出的令牌。Cursor 为空时，从 StartMs（这一集的播放位置，单位毫秒）读起，0 即开头；播放器拖动进度条后，用新的位置重新读。服务端从包含这个位置的那一段开始返回，所以第一页可能带着这个位置之前一点的弹幕。Cursor 和 StartMs 只能给一个。
+
+PageSize 是一页最多几条，0 取官方播放器的 90；服务端每页给出的条数有上限，再大也不会更多。
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `cursor` | string |  |
+| `startMs` | int64 |  |
 | `pageSize` | int |  |
 
 ### LandingOptions
