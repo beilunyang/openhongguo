@@ -1,0 +1,174 @@
+# Publishes a tagged release to every package registry. prepare-release.yml
+# pushes the tag after a reviewer approves it, and attaches the native
+# libraries to the GitHub Release; the packages here take them from there
+# instead of building the Go core again.
+#
+# npm and pub.dev trust this workflow through OIDC, with no tokens; Maven
+# Central takes a Central Portal token and a GPG key from the publish
+# environment, which only v* tags can deploy to. Each job skips a registry
+# that already has the version, so a failed run can simply be re-run.
+name: publish
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  VERSION: ${{ github.ref_name }}
+
+jobs:
+  # Checks the tagged commit's versions and waits for prepare-release.yml to
+  # attach the native libraries, which it does right after pushing the tag.
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: scripts/set-version.sh --check "${VERSION#v}"
+      - name: Wait for the native libraries
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for i in $(seq 60); do
+            if gh release view "$VERSION" --json assets --jq '.assets[].name' 2>/dev/null | grep -qx natives.tgz; then
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::the $VERSION release has no natives.tgz"
+          exit 1
+
+  go:
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: stable
+      - run: GOPROXY=https://proxy.golang.org go list -m "github.com/beilunyang/openhongguo@$VERSION"
+
+  npm-node:
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: publish
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: bindings/node
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      # Trusted publishing needs npm 11.5.1 or later.
+      - run: npm install -g npm@11
+      - id: published
+        run: echo "done=$(npm view "openhongguo@${VERSION#v}" version >/dev/null 2>&1 && echo true || echo false)" >> "$GITHUB_OUTPUT"
+      - if: steps.published.outputs.done == 'false'
+        run: npm run build && npm test && npm publish --access public
+
+  npm-react-native:
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: publish
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: bindings/react-native
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Unpack the native libraries
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download "$VERSION" -p natives.tgz -O - | tar -xzf -
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      - run: npm install -g npm@11
+      - id: published
+        run: echo "done=$(npm view "react-native-openhongguo@${VERSION#v}" version >/dev/null 2>&1 && echo true || echo false)" >> "$GITHUB_OUTPUT"
+      - if: steps.published.outputs.done == 'false'
+        run: npm ci && npm test && npm publish --access public
+
+  pub-dev:
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: publish
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: bindings/flutter
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Unpack the native libraries
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download "$VERSION" -p natives.tgz -O - | tar -xzf -
+      # Gets a pub.dev token for this run through OIDC.
+      - uses: dart-lang/setup-dart@2286a0c042b44434fe26d292bbce8d34f7ec662b # v1.8.2
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+      - id: published
+        run: echo "done=$(curl -sfo /dev/null "https://pub.dev/api/packages/openhongguo/versions/${VERSION#v}" && echo true || echo false)" >> "$GITHUB_OUTPUT"
+      - if: steps.published.outputs.done == 'false'
+        run: flutter pub get && flutter test && flutter pub publish --force
+
+  maven-central:
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: publish
+    defaults:
+      run:
+        working-directory: bindings/mobile/android
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Unpack the native libraries
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download "$VERSION" -p natives.tgz -O - | tar -xzf -
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+      # Maven Central shows a release 10 to 30 minutes after it is published;
+      # a re-run inside that window fails on the existing version.
+      - id: published
+        run: echo "done=$(curl -sfo /dev/null "https://repo1.maven.org/maven2/io/github/beilunyang/openhongguo/${VERSION#v}/openhongguo-${VERSION#v}.pom" && echo true || echo false)" >> "$GITHUB_OUTPUT"
+      - if: steps.published.outputs.done == 'false'
+        name: Publish and release
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        run: |
+          [ -n "$ORG_GRADLE_PROJECT_signingInMemoryKey" ] || { echo "::error::set the SIGNING_KEY secret in the publish environment"; exit 1; }
+          ./gradlew publishAndReleaseToMavenCentral
