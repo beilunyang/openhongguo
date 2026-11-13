@@ -93,7 +93,7 @@ console.log(playback.streams.map((s) => `${s.definition} ${s.url}`));
    ```sh
    npm install
    npm pack
-   npm install /path/to/react-native-openhongguo-0.2.0.tgz
+   npm install /path/to/react-native-openhongguo-0.3.0.tgz
    ```
 
 | 命令 | 作用 |

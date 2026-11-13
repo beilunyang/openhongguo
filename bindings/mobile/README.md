@@ -48,7 +48,7 @@ for s in result.playback.streams { print(s.definition, s.url) }
 
 ```kotlin
 dependencies {
-    implementation("io.github.beilunyang:openhongguo:0.2.0")
+    implementation("io.github.beilunyang:openhongguo:0.3.0")
 }
 ```
 
@@ -60,13 +60,13 @@ kotlinx-coroutines 会随依赖一起引入。最低系统版本是 Android 5.0�
 
 1. 选择 File > Add Package Dependencies。
 2. 输入 `https://github.com/beilunyang/openhongguo`。
-3. 选择版本规则 Up to Next Major Version，从 0.2.0 开始。
+3. 选择版本规则 Up to Next Major Version，从 0.3.0 开始。
 4. 把 `Openhongguo` 加入 App 的 target。
 
 也可以在 `Package.swift` 中加入依赖：
 
 ```swift
-.package(url: "https://github.com/beilunyang/openhongguo.git", from: "0.2.0")
+.package(url: "https://github.com/beilunyang/openhongguo.git", from: "0.3.0")
 ```
 
 Swift 包从 GitHub Release 下载 Go 编译出的 xcframework。最低系统版本是 iOS 13 和 macOS 11。

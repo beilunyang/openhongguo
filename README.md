@@ -44,8 +44,8 @@ SDK 用匿名设备发送所有请求，不需要登录。Go 以外的 SDK 都�
 |---|---|---|---|
 | Go | [`github.com/beilunyang/openhongguo`](https://pkg.go.dev/github.com/beilunyang/openhongguo/sdk) | `go get github.com/beilunyang/openhongguo@latest` | 本文 |
 | Node.js | [`openhongguo`](https://www.npmjs.com/package/openhongguo) | `npm install openhongguo` | [bindings/node](bindings/node/README.md) |
-| Android（Kotlin） | [`io.github.beilunyang:openhongguo`](https://central.sonatype.com/artifact/io.github.beilunyang/openhongguo) | `implementation("io.github.beilunyang:openhongguo:0.2.0")` | [bindings/mobile](bindings/mobile/README.md) |
-| iOS / macOS（Swift） | Swift Package | `.package(url: "https://github.com/beilunyang/openhongguo.git", from: "0.2.0")` | [bindings/mobile](bindings/mobile/README.md) |
+| Android（Kotlin） | [`io.github.beilunyang:openhongguo`](https://central.sonatype.com/artifact/io.github.beilunyang/openhongguo) | `implementation("io.github.beilunyang:openhongguo:0.3.0")` | [bindings/mobile](bindings/mobile/README.md) |
+| iOS / macOS（Swift） | Swift Package | `.package(url: "https://github.com/beilunyang/openhongguo.git", from: "0.3.0")` | [bindings/mobile](bindings/mobile/README.md) |
 | React Native | [`react-native-openhongguo`](https://www.npmjs.com/package/react-native-openhongguo) | `npx expo install react-native-openhongguo` | [bindings/react-native](bindings/react-native/README.md) |
 | Flutter | [`openhongguo`](https://pub.dev/packages/openhongguo) | `flutter pub add openhongguo` | [bindings/flutter](bindings/flutter/README.md) |
 
