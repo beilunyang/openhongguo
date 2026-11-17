@@ -1,6 +1,7 @@
 package contract
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"net/url"
@@ -88,6 +89,10 @@ func (f *fixtureTransport) Do(_ context.Context, req *sdk.Request) (*sdk.Respons
 		return f.file("short-rank.json"), nil
 	}
 	if strings.HasPrefix(u.Path, "/novel/commentapi/user/profile/") {
+		// The page asks for its tabs (no tab_type) before the works.
+		if !bytes.Contains(req.Body, []byte(`"tab_type"`)) {
+			return f.file("person-tabs.json"), nil
+		}
 		return f.file("person-works.json"), nil
 	}
 	if strings.HasPrefix(u.Path, "/novel/commentapi/comment/list/") {

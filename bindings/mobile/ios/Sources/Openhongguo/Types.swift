@@ -1754,7 +1754,7 @@ public struct Work: Codable, Hashable, Sendable {
     }
 }
 
-/// WorkPage 是某人作品的一页（作品 › 剧作）。
+/// WorkPage 是某人作品的一页（主页上的剧作）。
 public struct WorkPage: Codable, Hashable, Sendable {
     public var items: [Work]
     public var hasMore: Bool

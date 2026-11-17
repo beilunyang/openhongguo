@@ -1,0 +1,90 @@
+{
+  "BaseResp": {
+    "StatusCode": 0,
+    "StatusMessage": "success"
+  },
+  "code": 0,
+  "data": {
+    "common_list_info": {
+      "cursor": "{\"next_cursor\":[{\"id\":0,\"tab\":7,\"sub_tab\":null,\"cursor\":0,\"has_more\":true,\"min_cursor\":0,\"max_cursor\":0,\"prev_cursor\":0,\"prev_has_more\":false}],\"has_more\":true,\"prev_has_more\":false}",
+      "has_more": true,
+      "prev_has_more": false
+    },
+    "hightlight": {
+      "extra": {},
+      "is_privacy_tab": false,
+      "name": "",
+      "privacy_count": 0,
+      "tab_type": 7,
+      "total": 0
+    },
+    "tabs": [
+      {
+        "extra": {
+          "celebrity_works_tab_type": "three_col"
+        },
+        "is_privacy_tab": false,
+        "name": "作品",
+        "privacy_count": 0,
+        "sub_tabs": [
+          {
+            "extra": {},
+            "is_privacy_tab": false,
+            "name": "全部",
+            "privacy_count": 0,
+            "tab_type": 100,
+            "total": 40
+          },
+          {
+            "extra": {},
+            "is_privacy_tab": false,
+            "name": "剧作",
+            "privacy_count": 0,
+            "tab_type": 22,
+            "total": 12
+          },
+          {
+            "extra": {},
+            "is_privacy_tab": false,
+            "name": "预约",
+            "privacy_count": 0,
+            "tab_type": 20,
+            "total": 2
+          },
+          {
+            "extra": {},
+            "is_privacy_tab": false,
+            "name": "合集",
+            "privacy_count": 0,
+            "tab_type": 13,
+            "total": 0
+          },
+          {
+            "extra": {},
+            "is_privacy_tab": false,
+            "name": "剧评",
+            "privacy_count": 0,
+            "tab_type": 121,
+            "total": 1
+          }
+        ],
+        "tab_type": 23,
+        "total": 40
+      },
+      {
+        "extra": {
+          "search_second_info": ""
+        },
+        "is_privacy_tab": false,
+        "name": "红果圈",
+        "privacy_count": 0,
+        "sub_tabs": [],
+        "tab_type": 7,
+        "total": 90
+      }
+    ]
+  },
+  "debug_info": "",
+  "log_id": "fixture-log",
+  "message": "请求成功"
+}

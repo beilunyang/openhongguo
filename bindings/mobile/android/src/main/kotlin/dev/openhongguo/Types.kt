@@ -1561,7 +1561,7 @@ data class Work(
     }
 }
 
-/** WorkPage 是某人作品的一页（作品 › 剧作）。 */
+/** WorkPage 是某人作品的一页（主页上的剧作）。 */
 data class WorkPage(
     val items: List<Work> = emptyList(),
     val hasMore: Boolean = false,

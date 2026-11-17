@@ -106,7 +106,7 @@ flutter pub add openhongguo
 | 方法 | 作用 |
 |---|---|
 | `person(userId)` | 加载一位演员或一个角色的主页 |
-| `personWorks(userId, cursor)` | 加载一位演员参演的短剧，一次一页（主页上的作品 › 剧作） |
+| `personWorks(userId, cursor)` | 加载一位演员参演的短剧，一次一页（主页上的剧作） |
 
 ### 播放与设备
 

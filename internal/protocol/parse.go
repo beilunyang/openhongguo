@@ -1742,6 +1742,63 @@ type WorksResult struct {
 	Cursor  string
 }
 
+// worksTabName is the tab, or sub tab, of a person's page that lists the
+// series they act in.
+const worksTabName = "剧作"
+
+// ParseWorksTab reads which tab of a person's page lists their works from
+// the answer to UserWorksTabsBody. A sub tab named 剧作 wins (作品 › 剧作);
+// otherwise a tab named 剧作 is used with its 全部 sub tab, or its first.
+// ok is false when the page has no such tab.
+func ParseWorksTab(raw []byte) (tab WorksTab, ok bool, err error) {
+	type entry struct {
+		Name string  `json:"name"`
+		Type flexInt `json:"tab_type"`
+		Subs []struct {
+			Name string  `json:"name"`
+			Type flexInt `json:"tab_type"`
+		} `json:"sub_tabs"`
+	}
+	var env struct {
+		Code flexString `json:"code"`
+		Data struct {
+			Tabs      []entry `json:"tabs"`
+			Highlight *entry  `json:"hightlight"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(raw, &env); err != nil {
+		return WorksTab{}, false, err
+	}
+	if env.Code.String() != "" && env.Code.String() != "0" {
+		return WorksTab{}, false, fmt.Errorf("works tabs code %s", env.Code.String())
+	}
+	tabs := env.Data.Tabs
+	if len(tabs) == 0 && env.Data.Highlight != nil {
+		tabs = []entry{*env.Data.Highlight}
+	}
+	for _, t := range tabs {
+		for _, s := range t.Subs {
+			if s.Name == worksTabName {
+				return WorksTab{Tab: int(t.Type), Sub: int(s.Type)}, true, nil
+			}
+		}
+	}
+	for _, t := range tabs {
+		if t.Name != worksTabName || len(t.Subs) == 0 {
+			continue
+		}
+		sub := t.Subs[0]
+		for _, s := range t.Subs {
+			if s.Name == "全部" {
+				sub = s
+				break
+			}
+		}
+		return WorksTab{Tab: int(t.Type), Sub: int(sub.Type)}, true, nil
+	}
+	return WorksTab{}, false, nil
+}
+
 // ParseUserWorks reads the 作品 tab of a person's page.
 func ParseUserWorks(raw []byte) (*WorksResult, error) {
 	var env struct {

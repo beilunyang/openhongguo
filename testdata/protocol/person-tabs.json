@@ -1,0 +1,73 @@
+{
+  "BaseResp": {
+    "StatusCode": 0,
+    "StatusMessage": "success"
+  },
+  "code": 0,
+  "data": {
+    "common_list_info": {
+      "cursor": "{\"next_cursor\":[{\"id\":0,\"tab\":20,\"sub_tab\":null,\"cursor\":2,\"has_more\":false,\"min_cursor\":0,\"max_cursor\":0,\"prev_cursor\":0,\"prev_has_more\":false},{\"id\":0,\"tab\":100,\"sub_tab\":null,\"cursor\":12,\"has_more\":true,\"min_cursor\":0,\"max_cursor\":0,\"prev_cursor\":0,\"prev_has_more\":false}],\"has_more\":true,\"prev_has_more\":false}",
+      "has_more": true,
+      "prev_has_more": false
+    },
+    "hightlight": {
+      "is_privacy_tab": false,
+      "name": "剧作",
+      "privacy_count": 0,
+      "sub_tabs": [
+        {
+          "extra": {},
+          "is_privacy_tab": false,
+          "name": "全部",
+          "privacy_count": 0,
+          "tab_type": 100,
+          "total": 12
+        },
+        {
+          "extra": {},
+          "is_privacy_tab": false,
+          "name": "预约",
+          "privacy_count": 0,
+          "tab_type": 20,
+          "total": 2
+        }
+      ],
+      "tab_type": 8,
+      "total": 14,
+      "extra": {}
+    },
+    "tabs": [
+      {
+        "extra": {
+          "celebrity_works_tab_type": "three_col"
+        },
+        "is_privacy_tab": false,
+        "name": "剧作",
+        "privacy_count": 0,
+        "sub_tabs": [
+          {
+            "extra": {},
+            "is_privacy_tab": false,
+            "name": "全部",
+            "privacy_count": 0,
+            "tab_type": 100,
+            "total": 12
+          },
+          {
+            "extra": {},
+            "is_privacy_tab": false,
+            "name": "预约",
+            "privacy_count": 0,
+            "tab_type": 20,
+            "total": 2
+          }
+        ],
+        "tab_type": 8,
+        "total": 14
+      }
+    ]
+  },
+  "debug_info": "",
+  "log_id": "fixture-log",
+  "message": "请求成功"
+}

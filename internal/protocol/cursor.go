@@ -126,11 +126,13 @@ func digits(s string) bool {
 	return true
 }
 
-// WorksCursor continues a person's works: the person and the service's own
-// cursor string.
+// WorksCursor continues a person's works: the person, the service's own
+// cursor string, and the tab the first page was read from. A cursor without
+// a tab predates the tab lookup; the caller looks the tab up again.
 type WorksCursor struct {
-	UserID string `json:"u"`
-	Next   string `json:"n"`
+	UserID string    `json:"u"`
+	Next   string    `json:"n"`
+	Tab    *WorksTab `json:"w,omitempty"`
 }
 
 // EncodeWorksCursor packs a WorksCursor into an opaque token.

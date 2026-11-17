@@ -948,11 +948,33 @@ func TestCursorsRejectForeignValues(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if c, err := DecodeWorksCursor(works); err != nil || c.UserID != "7100000000001701" {
+	if c, err := DecodeWorksCursor(works); err != nil || c.UserID != "7100000000001701" || c.Tab != nil {
 		t.Fatalf("works cursor = %+v err %v", c, err)
+	}
+	works, _ = EncodeWorksCursor(WorksCursor{UserID: "7100000000001701", Next: "x", Tab: &WorksTab{Tab: 23, Sub: 22}})
+	if c, err := DecodeWorksCursor(works); err != nil || c.Tab == nil || *c.Tab != (WorksTab{Tab: 23, Sub: 22}) {
+		t.Fatalf("works cursor with tab = %+v err %v", c, err)
 	}
 	if _, err := DecodeWorksCursor(token); err == nil {
 		t.Fatal("short cursor accepted as works cursor")
+	}
+}
+
+func TestParseWorksTabReadsBothLayouts(t *testing.T) {
+	for name, want := range map[string]WorksTab{
+		"person-tabs.json":       {Tab: 8, Sub: 100},
+		"person-tabs-works.json": {Tab: 23, Sub: 22},
+	} {
+		got, ok, err := ParseWorksTab(fixture(t, name))
+		if err != nil || !ok || got != want {
+			t.Fatalf("%s: tab = %+v ok %v err %v, want %+v", name, got, ok, err, want)
+		}
+	}
+	if _, ok, err := ParseWorksTab([]byte(`{"code":0,"data":{"tabs":[{"name":"红果圈","tab_type":7,"sub_tabs":[]}]}}`)); err != nil || ok {
+		t.Fatalf("a page without 剧作: ok %v err %v", ok, err)
+	}
+	if _, _, err := ParseWorksTab([]byte(`{"code":1001,"data":{}}`)); err == nil {
+		t.Fatal("error code accepted")
 	}
 }
 

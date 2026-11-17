@@ -1839,7 +1839,7 @@ class Work {
       };
 }
 
-/// WorkPage 是某人作品的一页（作品 › 剧作）。
+/// WorkPage 是某人作品的一页（主页上的剧作）。
 class WorkPage {
   final List<Work> items;
   final bool hasMore;
