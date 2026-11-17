@@ -35,7 +35,8 @@ type Options struct {
 	// 读取（短剧筛选和活动榜单），APIOrigin 的默认主机不提供这些接口。
 	// 为空时使用 App 自己的 API 主机。
 	DistributionOrigin string
-	// Device 是新匿名档案注册时使用的手机，之后每次请求都出示它。
+	// Device 是新匿名档案注册时使用的手机，普通接口继续出示它。
+	// V5 播放接口复用这份匿名身份，并使用播放协议要求的手机端参数模板。
 	// 零值字段取 model.DefaultDevice（Android 14 上的 Xiaomi 14，
 	// 小米应用商店渠道）。档案会保留注册时的设备，
 	// 所以修改此项只影响之后注册的档案，包括设备重置之后。
@@ -44,8 +45,8 @@ type Options struct {
 	// 0 或 1 表示不重试。
 	RetryAttempts int
 	// DeviceResets 限定一次调用最多换几台新的匿名设备。服务端拒绝当前设备
-	// （ErrDeviceRejected），或播放接口返回空结果（ErrAnonymousLimited；
-	// 2026-10-29 起，服务端对每台匿名设备大约只给一次播放模型）时，
+	// （ErrDeviceRejected），或 V5 重签重试和旧播放接口都未取得结果
+	// （ErrAnonymousLimited）时，
 	// 客户端丢弃当前设备、注册一台新设备，再重新执行这次调用。
 	// nil 表示默认的 2 次；sdk.Int(0) 表示关闭，交给调用方自己调用 ResetDevice。
 	// 换设备会覆盖 ProfileStore 里保存的档案，并通过 Logger 记一行日志。

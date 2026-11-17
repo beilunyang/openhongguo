@@ -2,7 +2,9 @@ package sdk
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"time"
 
 	"github.com/beilunyang/openhongguo/internal/drm"
 	"github.com/beilunyang/openhongguo/internal/protocol"
@@ -11,37 +13,73 @@ import (
 )
 
 // PlaybackOptions 预留给码流规格或接口的选择。
-// 第二阶段按服务端下发的原样解析模型，由调用方挑选流。
 type PlaybackOptions struct{}
 
-// ResolvePlayback 加载一集的播放模型：各清晰度的地址、编码和码率。
-//
-// 请求就是官方客户端发出的、带签名的 video_model 调用。
-// 响应是客户端的 TTVideoEngine 模型。受保护的模型会和 ErrDRMProtected
-// 一起返回；把它传给 ContentKey 取得密钥。
-// 模型携带的是包装后的密钥材料（Playback.KeyMaterial），从不包含内容密钥本身、
-// 分片校验数据或解密后的媒体。
+// ResolvePlayback 加载一集的各清晰度地址、编码和码率。
+// 优先使用 V5 手机端协议，空响应或接口不支持时兼容旧播放接口。
+// 受保护的模型与 ErrDRMProtected 一起返回，可继续交给 ContentKey。
 func (c *Client) ResolvePlayback(ctx context.Context, episodeID string, _ PlaybackOptions) (*model.Playback, error) {
+	if !validID(episodeID) {
+		return nil, fmt.Errorf("invalid episode ID")
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	body, err := protocol.PlaybackV5Body(episodeID)
+	if err != nil {
+		return nil, err
+	}
 	return withFreshDevice(ctx, c, true, func(ctx context.Context) (*model.Playback, error) {
-		if !validID(episodeID) {
-			return nil, fmt.Errorf("invalid episode ID")
-		}
 		p, err := c.ensureSearchGuest(ctx)
 		if err != nil {
 			return nil, err
 		}
-		body, err := protocol.PlaybackBody(episodeID)
-		if err != nil {
-			return nil, err
+		var raw []byte
+		for attempt := 0; attempt < 2; attempt++ {
+			if err = ctx.Err(); err != nil {
+				return nil, err
+			}
+			var query string
+			var headers map[string]string
+			query, headers, err = c.playbackSigner.Sign(protocol.PlaybackV5Pairs(c.identity(p)), c.clock().UnixMilli(), body, nil)
+			if err != nil {
+				return nil, err
+			}
+			headers["User-Agent"] = protocol.PlaybackUserAgent
+			headers["Accept"] = "application/json"
+			headers["Content-Encoding"] = "gzip"
+			raw, _, err = c.doRaw(ctx, "POST", c.apiOrigin+protocol.PathPlaybackV5+"?"+query, headers, body)
+			if ctxErr := ctx.Err(); ctxErr != nil {
+				return nil, ctxErr
+			}
+			if !errors.Is(err, ErrAnonymousLimited) || attempt == 1 {
+				break
+			}
+			if err = sleepContext(ctx, 300*time.Millisecond); err != nil {
+				return nil, err
+			}
 		}
-		ticket := c.clock().UnixMilli()
-		// Playback is signed with the full Argus/Ladon envelope (and without
-		// Medusa); the other endpoints keep using SignPOST / SignGET. See
-		// internal/protocol/sign/playback.go.
-		rawQuery, headers := sign.SignPlaybackPOST(protocol.PathPlayback, protocol.DeviceQueryPairs(c.identity(p)), ticket, p.DeviceID, protocol.VersionName, body, nil)
-		raw, _, err := c.doRaw(ctx, "POST", c.apiOrigin+protocol.PathPlayback+"?"+rawQuery, anonymousHeaders(c, p, ticket, headers), body)
 		if err != nil {
-			return nil, err
+			if !errors.Is(err, ErrAnonymousLimited) && !playbackRouteUnavailable(err) {
+				return nil, err
+			}
+			v5Err := err
+			legacyBody, bodyErr := protocol.PlaybackBody(episodeID)
+			if bodyErr != nil {
+				return nil, bodyErr
+			}
+			ticket := c.clock().UnixMilli()
+			query, headers := sign.SignPlaybackPOST(protocol.PathPlayback, protocol.DeviceQueryPairs(c.identity(p)), ticket, p.DeviceID, protocol.VersionName, legacyBody, nil)
+			raw, _, err = c.doRaw(ctx, "POST", c.apiOrigin+protocol.PathPlayback+"?"+query, anonymousHeaders(c, p, ticket, headers), legacyBody)
+			if ctxErr := ctx.Err(); ctxErr != nil {
+				return nil, ctxErr
+			}
+			if err != nil {
+				if playbackRouteUnavailable(err) {
+					return nil, v5Err
+				}
+				return nil, err
+			}
 		}
 		playback, err := protocol.ParsePlayback(raw, episodeID)
 		if err != nil {
@@ -52,6 +90,11 @@ func (c *Client) ResolvePlayback(ctx context.Context, episodeID string, _ Playba
 		}
 		return playback, nil
 	})
+}
+
+func playbackRouteUnavailable(err error) bool {
+	var api *APIError
+	return errors.As(err, &api) && (api.HTTPStatus == 404 || api.HTTPStatus == 405)
 }
 
 // ContentKey 从播放模型算出加密分集的内容密钥。
