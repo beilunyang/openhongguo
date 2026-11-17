@@ -45,8 +45,10 @@ func (c *Client) ResolvePlayback(ctx context.Context, episodeID string, _ Playba
 			if err != nil {
 				return nil, err
 			}
-			headers["User-Agent"] = protocol.PlaybackUserAgent
-			headers["Accept"] = "application/json"
+			headers = anonymousHeaders(c, p, c.clock().UnixMilli(), headers)
+			headers["User-Agent"] = protocol.PlaybackUserAgent(c.deviceOf(p))
+			headers["Accept"] = "application/json; charset=utf-8,application/x-protobuf"
+			headers["x-xs-from-web"] = "0"
 			headers["Content-Encoding"] = "gzip"
 			raw, _, err = c.doRaw(ctx, "POST", c.apiOrigin+protocol.PathPlaybackV5+"?"+query, headers, body)
 			if ctxErr := ctx.Err(); ctxErr != nil {

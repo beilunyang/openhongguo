@@ -36,7 +36,7 @@ type Options struct {
 	// 为空时使用 App 自己的 API 主机。
 	DistributionOrigin string
 	// Device 是新匿名档案注册时使用的手机，普通接口继续出示它。
-	// V5 播放接口复用这份匿名身份，并使用播放协议要求的手机端参数模板。
+	// V5 播放接口也出示这台手机，只是版本号用 7.4.3.32（和 App 一致）。
 	// 零值字段取 model.DefaultDevice（Android 14 上的 Xiaomi 14，
 	// 小米应用商店渠道）。档案会保留注册时的设备，
 	// 所以修改此项只影响之后注册的档案，包括设备重置之后。

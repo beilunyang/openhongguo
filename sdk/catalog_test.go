@@ -454,6 +454,14 @@ func assertAnonymousWire(t *testing.T, seen []captured) {
 			if q.Get("version_code") != "74332" || q.Get("device_id") != "7100000000000001" || q.Get("iid") != "7100000000000002" {
 				t.Fatalf("playback query = %s", hit.RawQuery)
 			}
+			// The 7.4.3.32 client's order: device_platform first, the ticket fourth,
+			// and the profile's own phone rather than a fixed template.
+			if !strings.HasPrefix(hit.RawQuery, "device_platform=android&os=android&ssmix=a&_rticket=") || q.Get("device_type") != model.DefaultDevice.Model || q.Get("resolution") != model.DefaultDevice.Resolution {
+				t.Fatalf("playback query order or device = %s", hit.RawQuery)
+			}
+			if hit.Header.Get("lc") != "101" || hit.Header.Get("x-xs-from-web") != "0" || !strings.Contains(hit.Header.Get("User-Agent"), "com.phoenix.read/74332 ") {
+				t.Fatalf("playback headers = %v", hit.Header)
+			}
 			zr, err := gzip.NewReader(strings.NewReader(hit.Body))
 			if err != nil {
 				t.Fatalf("playback body is not gzip: %v", err)
@@ -462,7 +470,7 @@ func assertAnonymousWire(t *testing.T, seen []captured) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if !strings.Contains(string(plain), `"mixed_video_id_map":{"1004":["7100000000000201"]}`) || !strings.Contains(string(plain), `"need_all_video_definition":true`) {
+			if !strings.Contains(string(plain), `"mixed_video_id_map":{"1004":["7100000000000201"]}`) || !strings.Contains(string(plain), `"need_all_video_definition":true`) || !strings.Contains(string(plain), `"device_level":1`) {
 				t.Fatalf("playback body = %s", plain)
 			}
 			if hit.Header.Get("Content-Encoding") != "gzip" || hit.Header.Get("x-medusa") == "" || hit.Header.Get("x-helios") == "" || hit.Header.Get("x-khronos") == "" || hit.Header.Get("x-ss-stub") == "" {

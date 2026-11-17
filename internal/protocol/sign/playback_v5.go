@@ -23,6 +23,7 @@ func NewPlaybackV5Signer(nowMillis int64) *PlaybackV5Signer {
 }
 
 // Sign 对实际发送的 gzip 请求体签名。查询串不添加 ts，选择分支时只调整 _rticket。
+// pairs 里已有 _rticket 时就地填写（保持客户端的参数顺序），否则追加在末尾。
 func (s *PlaybackV5Signer) Sign(pairs [][2]string, nowMillis int64, body []byte, entropy *Entropy) (string, map[string]string, error) {
 	ts := uint32(nowMillis / 1000)
 	bodyMD5 := [16]byte{}
@@ -30,9 +31,19 @@ func (s *PlaybackV5Signer) Sign(pairs [][2]string, nowMillis int64, body []byte,
 		bodyMD5 = md5Raw(body)
 	}
 	withTicket := append([][2]string(nil), pairs...)
-	withTicket = append(withTicket, [2]string{"_rticket", ""})
+	slot := -1
+	for i, kv := range withTicket {
+		if kv[0] == "_rticket" {
+			slot = i
+			break
+		}
+	}
+	if slot < 0 {
+		withTicket = append(withTicket, [2]string{"_rticket", ""})
+		slot = len(withTicket) - 1
+	}
 	for offset := int64(0); offset < 1024; offset++ {
-		withTicket[len(withTicket)-1][1] = strconv.FormatInt(nowMillis+offset, 10)
+		withTicket[slot][1] = strconv.FormatInt(nowMillis+offset, 10)
 		query := encodeQuery(withTicket)
 		queryHash := sm3Sum([]byte(query))
 		iv := getIV(getIV(getIV(0x20230928, queryHash[:]), bodyMD5[:]), le32(ts))
