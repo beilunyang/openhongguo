@@ -741,19 +741,17 @@ func parseSeriesPayload(payload wireSeriesPayload) (*model.Series, []model.Episo
 
 // ParsePlayback reads a video_model response into a media model.
 //
-// The wire value is the shipped client's TTVideoEngine model: a JSON string at
-// data.video_model whose video_list holds one object per representation.
+// TTVideoEngine 模型位于旧响应的 data.video_model，或 V5 响应的
+// data["1004"][episodeID].video_model / data[episodeID].video_model。
 // A representation is marked protected when it carries encrypt_info,
 // gear_des_key, spade_a, kid, check_info, encryption_method, or encrypt=true.
 // Keys and per-segment check data are used only to set Protected; they are
 // never copied into the returned model.
 func ParsePlayback(raw []byte, episodeID string) (*model.Playback, error) {
 	var env struct {
-		Code    flexString `json:"code"`
-		Message string     `json:"message"`
-		Data    struct {
-			VideoModel json.RawMessage `json:"video_model"`
-		} `json:"data"`
+		Code    flexString                 `json:"code"`
+		Message string                     `json:"message"`
+		Data    map[string]json.RawMessage `json:"data"`
 	}
 	if err := json.Unmarshal(raw, &env); err != nil {
 		return nil, err
@@ -761,18 +759,53 @@ func ParsePlayback(raw []byte, episodeID string) (*model.Playback, error) {
 	if env.Code.String() != "" && env.Code.String() != "0" {
 		return nil, fmt.Errorf("playback code %s", env.Code.String())
 	}
-	body, err := playbackObject(env.Data.VideoModel)
+	entry := env.Data
+	if group, ok := entry["1004"]; ok {
+		var grouped map[string]json.RawMessage
+		if err := json.Unmarshal(group, &grouped); err != nil {
+			return nil, fmt.Errorf("playback group is not an object: %w", err)
+		}
+		entry = grouped
+	}
+	if _, ok := entry["video_model"]; !ok {
+		row, ok := entry[episodeID]
+		if !ok {
+			return nil, fmt.Errorf("playback model missing for requested episode")
+		}
+		var selected map[string]json.RawMessage
+		if err := json.Unmarshal(row, &selected); err != nil {
+			return nil, fmt.Errorf("playback entry is not an object: %w", err)
+		}
+		entry = selected
+	}
+	var envelopeExpiry int64
+	for _, fields := range []map[string]json.RawMessage{entry, env.Data} {
+		for _, name := range []string{"url_expire", "expire_time"} {
+			if value, ok := fields[name]; ok {
+				var expiry flexInt64
+				if err := json.Unmarshal(value, &expiry); err != nil {
+					return nil, err
+				}
+				if envelopeExpiry == 0 && expiry > 0 {
+					envelopeExpiry = int64(expiry)
+				}
+			}
+		}
+	}
+	body, err := playbackObject(entry["video_model"])
 	if err != nil {
 		return nil, err
 	}
 	var video struct {
-		Status    flexInt         `json:"status"`
-		VideoID   flexString      `json:"video_id"`
-		MediaType string          `json:"media_type"`
-		Duration  float64         `json:"video_duration"`
-		URLExpire flexInt64       `json:"url_expire"`
-		VideoList json.RawMessage `json:"video_list"`
-		Dynamic   json.RawMessage `json:"dynamic_video"`
+		Status     flexInt         `json:"status"`
+		VideoID    flexString      `json:"video_id"`
+		MediaType  string          `json:"media_type"`
+		Duration   float64         `json:"video_duration"`
+		URLExpire  flexInt64       `json:"url_expire"`
+		ExpireTime flexInt64       `json:"expire_time"`
+		KeySeed    string          `json:"key_seed"`
+		VideoList  json.RawMessage `json:"video_list"`
+		Dynamic    json.RawMessage `json:"dynamic_video"`
 	}
 	if err := json.Unmarshal(body, &video); err != nil {
 		return nil, fmt.Errorf("playback model is not JSON: %w", err)
@@ -804,7 +837,7 @@ func ParsePlayback(raw []byte, episodeID string) (*model.Playback, error) {
 		if len(dynamic.AudioList) > 0 {
 			var track playbackItem
 			if err := json.Unmarshal(dynamic.AudioList[0], &track); err == nil {
-				audioURL = strings.TrimSpace(track.MainURL)
+				audioURL, _ = playbackURL(track.MainURL, video.KeySeed)
 			}
 		}
 	}
@@ -813,12 +846,12 @@ func ParsePlayback(raw []byte, episodeID string) (*model.Playback, error) {
 		VideoID:         video.VideoID.String(),
 		MediaType:       strings.TrimSpace(video.MediaType),
 		DurationSeconds: int(video.Duration + 0.5),
-		ExpiresAt:       int64(video.URLExpire),
+		ExpiresAt:       firstInt64(int64(video.URLExpire), int64(video.ExpireTime), envelopeExpiry),
 		Streams:         make([]model.Stream, 0, len(items)),
 	}
 	protected := 0
 	for _, item := range items {
-		stream := item.stream()
+		stream := item.stream(video.KeySeed)
 		if stream.URL == "" {
 			continue
 		}
@@ -877,6 +910,7 @@ type playbackItem struct {
 	MainURL     string          `json:"main_url"`
 	BackupURL   string          `json:"backup_url"`
 	BackupURL1  string          `json:"backup_url_1"`
+	BackupURL2  string          `json:"backup_url_2"`
 	HLS         json.RawMessage `json:"hls"`
 	M3U8        string          `json:"m3u8"`
 	Encrypt     json.RawMessage `json:"encrypt"`
@@ -908,7 +942,7 @@ type playbackItem struct {
 	} `json:"video_meta"`
 }
 
-func (it playbackItem) stream() model.Stream {
+func (it playbackItem) stream(seed string) model.Stream {
 	s := model.Stream{
 		Definition: firstNonEmpty(it.Meta.Definition, it.Definition),
 		Quality:    firstNonEmpty(it.Meta.Quality, it.Quality),
@@ -917,10 +951,20 @@ func (it playbackItem) stream() model.Stream {
 		Height:     firstInt(it.Meta.Height, it.Height),
 		Bitrate:    firstInt64(it.Meta.Bitrate, it.Bitrate),
 		Size:       firstInt64(it.Meta.Size, it.Size),
-		URL:        strings.TrimSpace(it.MainURL),
-		BackupURL:  firstNonEmpty(it.BackupURL, it.BackupURL1),
 		HLS:        jsonTruthy(it.HLS) || strings.TrimSpace(it.M3U8) != "",
 		Dash:       strings.EqualFold(it.Meta.VType, "dash") || strings.EqualFold(it.VType, "dash"),
+	}
+	for _, value := range []string{it.MainURL, it.BackupURL, it.BackupURL1, it.BackupURL2} {
+		decoded, err := playbackURL(value, seed)
+		if err != nil {
+			continue
+		}
+		if s.URL == "" {
+			s.URL = decoded
+		} else if decoded != s.URL {
+			s.BackupURL = decoded
+			break
+		}
 	}
 	protected, method := it.protection()
 	s.Protected = protected

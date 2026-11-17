@@ -62,6 +62,16 @@ go test -tags live -run TestLiveContract -v ./internal/contract
 
 > **注意**：样本只保留解析器读取的字段。这样，无关字段的变化不会使检查失败。
 
+## 播放协议
+
+`ResolvePlayback` 优先使用 V5 手机端接口 `/novel/player/multi_video_model/player/v1`。
+请求体先 gzip，再对实际发送的字节生成 V5 Medusa、Helios 和 `X-SS-STUB`；播放请求不携带游客 Cookie。
+客户端复用签名进程上下文和匿名设备档案。V5 空响应先使用原设备重新签名重试一次，
+再尝试旧播放接口；达到设备恢复条件后，沿用 `Options.DeviceResets` 的次数限制。
+限流、认证、业务错误和解析错误直接沿用现有错误语义。
+
+解析器同时支持分组和平铺模型，以及明文、Base64、模型 `key_seed` 保护的主备地址。
+
 ## 持续集成
 
 每次推送和每个 pull request 都运行 `.github/workflows/ci.yml`。持续集成不访问网络。各平台的 SDK 用 `testdata/protocol` 的样本回放测试。

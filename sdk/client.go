@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/beilunyang/openhongguo/internal/protocol"
+	"github.com/beilunyang/openhongguo/internal/protocol/sign"
 
 	"github.com/beilunyang/openhongguo/sdk/model"
 )
@@ -34,6 +35,7 @@ type Client struct {
 	transport      Transport
 	profileStore   ProfileStore
 	signer         Signer
+	playbackSigner *sign.PlaybackV5Signer
 	authProvider   AuthProvider
 	logger         Logger
 	clock          func() time.Time
@@ -96,8 +98,10 @@ func NewClient(opts Options) (*Client, error) {
 		retryAttempts: attempts,
 		deviceResets:  resets,
 		transport:     opts.Transport, profileStore: opts.ProfileStore,
-		signer: opts.Signer, authProvider: opts.AuthProvider,
-		logger: opts.Logger, clock: opts.Clock,
+		signer:         opts.Signer,
+		playbackSigner: sign.NewPlaybackV5Signer(opts.Clock().UnixMilli()),
+		authProvider:   opts.AuthProvider,
+		logger:         opts.Logger, clock: opts.Clock,
 		apiOrigin: api, registerOrigin: reg, distOrigin: dist,
 	}, nil
 }
