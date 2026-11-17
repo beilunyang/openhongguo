@@ -1118,7 +1118,7 @@ func TestShortRankReadsActorsAndPagesWithoutFilterIDs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if page.Content != protocol.ShortRankActors || page.Board != "ranklist_series_actor" || len(page.Items) != 3 || page.Cursor == "" {
+	if page.Content != protocol.ShortRankActors || page.Board != "" || len(page.Items) != 3 || page.Cursor == "" {
 		t.Fatalf("page = %+v", page)
 	}
 	if a := page.Items[0]; a.ActorID != "7100000000001401" || a.Actor != "Fixture Actor A" || a.SeriesID != "" {

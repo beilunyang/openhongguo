@@ -124,281 +124,42 @@
               "show_name": "全部",
               "is_selected": false,
               "show_type": 505,
-              "selector_item_type": "",
-              "sub_cell_selector": {
-                "outer_row": {
-                  "items": [
-                    {
-                      "selector_item_id": "ranklist_hot_sc",
-                      "show_name": "推荐榜",
-                      "is_selected": false,
-                      "show_type": 505,
-                      "selector_item_type": ""
-                    },
-                    {
-                      "selector_item_id": "ranklist_hot_play_sc",
-                      "show_name": "热播榜",
-                      "is_selected": false,
-                      "show_type": 505,
-                      "selector_item_type": ""
-                    },
-                    {
-                      "selector_item_id": "ranklist_prestige",
-                      "show_name": "臻果榜",
-                      "is_selected": false,
-                      "show_type": 505,
-                      "selector_item_type": ""
-                    },
-                    {
-                      "selector_item_id": "ranklist_subscribe",
-                      "show_name": "预约榜",
-                      "is_selected": false,
-                      "show_type": 505,
-                      "selector_item_type": ""
-                    },
-                    {
-                      "selector_item_id": "ranklist_new_rank_sc",
-                      "show_name": "新剧榜",
-                      "is_selected": false,
-                      "show_type": 505,
-                      "selector_item_type": ""
-                    },
-                    {
-                      "selector_item_id": "ranklist_hot_search_sc",
-                      "show_name": "热搜榜",
-                      "is_selected": false,
-                      "show_type": 505,
-                      "selector_item_type": ""
-                    },
-                    {
-                      "selector_item_id": "ranklist_chase_update",
-                      "show_name": "追更榜",
-                      "is_selected": false,
-                      "show_type": 505,
-                      "selector_item_type": ""
-                    },
-                    {
-                      "selector_item_id": "ranklist_must_watch",
-                      "show_name": "必看榜",
-                      "is_selected": false,
-                      "show_type": 505,
-                      "selector_item_type": ""
-                    },
-                    {
-                      "selector_item_id": "ranklist_followed",
-                      "show_name": "收藏榜",
-                      "is_selected": false,
-                      "show_type": 505,
-                      "selector_item_type": ""
-                    }
-                  ]
-                }
-              }
+              "selector_item_type": ""
             },
             {
               "selector_item_id": "human",
               "show_name": "真人剧",
               "is_selected": false,
               "show_type": 505,
-              "selector_item_type": "",
-              "sub_cell_selector": {
-                "outer_row": {
-                  "items": [
-                    {
-                      "selector_item_id": "human_hot_sc",
-                      "show_name": "推荐榜",
-                      "is_selected": false,
-                      "show_type": 505,
-                      "selector_item_type": ""
-                    },
-                    {
-                      "selector_item_id": "human_hot_play",
-                      "show_name": "热播榜",
-                      "is_selected": false,
-                      "show_type": 505,
-                      "selector_item_type": ""
-                    },
-                    {
-                      "selector_item_id": "human_new_rank",
-                      "show_name": "新剧榜",
-                      "is_selected": false,
-                      "show_type": 505,
-                      "selector_item_type": ""
-                    },
-                    {
-                      "selector_item_id": "human_hot_search",
-                      "show_name": "热搜榜",
-                      "is_selected": false,
-                      "show_type": 505,
-                      "selector_item_type": ""
-                    },
-                    {
-                      "selector_item_id": "human_must_watch",
-                      "show_name": "必看榜",
-                      "is_selected": false,
-                      "show_type": 505,
-                      "selector_item_type": ""
-                    },
-                    {
-                      "selector_item_id": "human_followed",
-                      "show_name": "收藏榜",
-                      "is_selected": false,
-                      "show_type": 505,
-                      "selector_item_type": ""
-                    }
-                  ]
-                }
-              }
+              "selector_item_type": ""
             },
             {
               "selector_item_id": "comic_series_rank",
               "show_name": "漫剧",
               "is_selected": false,
               "show_type": 505,
-              "selector_item_type": "",
-              "sub_cell_selector": {
-                "outer_row": {
-                  "items": [
-                    {
-                      "selector_item_id": "comic_series_hot_rank",
-                      "show_name": "推荐榜",
-                      "is_selected": false,
-                      "show_type": 505,
-                      "selector_item_type": ""
-                    },
-                    {
-                      "selector_item_id": "comic_series_hot_play",
-                      "show_name": "热播榜",
-                      "is_selected": false,
-                      "show_type": 505,
-                      "selector_item_type": ""
-                    },
-                    {
-                      "selector_item_id": "comic_series_new_rank",
-                      "show_name": "新剧榜",
-                      "is_selected": false,
-                      "show_type": 505,
-                      "selector_item_type": ""
-                    },
-                    {
-                      "selector_item_id": "comic_series_hot_search",
-                      "show_name": "热搜榜",
-                      "is_selected": false,
-                      "show_type": 0,
-                      "selector_item_type": ""
-                    }
-                  ]
-                }
-              }
+              "selector_item_type": ""
             },
             {
               "selector_item_id": "ai_playlet",
               "show_name": "AI剧",
               "is_selected": false,
               "show_type": 505,
-              "selector_item_type": "",
-              "sub_cell_selector": {
-                "outer_row": {
-                  "items": [
-                    {
-                      "selector_item_id": "ai_playlet_hot_sc",
-                      "show_name": "推荐榜",
-                      "is_selected": false,
-                      "show_type": 505,
-                      "selector_item_type": ""
-                    },
-                    {
-                      "selector_item_id": "ai_playlet_hot_play",
-                      "show_name": "热播榜",
-                      "is_selected": false,
-                      "show_type": 505,
-                      "selector_item_type": ""
-                    },
-                    {
-                      "selector_item_id": "ai_playlet_new_rank",
-                      "show_name": "新剧榜",
-                      "is_selected": false,
-                      "show_type": 505,
-                      "selector_item_type": ""
-                    },
-                    {
-                      "selector_item_id": "ai_playlet_hot_search",
-                      "show_name": "热搜榜",
-                      "is_selected": false,
-                      "show_type": 0,
-                      "selector_item_type": ""
-                    },
-                    {
-                      "selector_item_id": "ai_playlet_must_watch",
-                      "show_name": "必看榜",
-                      "is_selected": false,
-                      "show_type": 505,
-                      "selector_item_type": ""
-                    },
-                    {
-                      "selector_item_id": "ai_playlet_followed",
-                      "show_name": "收藏榜",
-                      "is_selected": false,
-                      "show_type": 505,
-                      "selector_item_type": ""
-                    }
-                  ]
-                }
-              }
+              "selector_item_type": ""
             },
             {
               "selector_item_id": "ranklist_celebrity",
               "show_name": "演员",
               "is_selected": true,
               "show_type": 521,
-              "selector_item_type": "",
-              "sub_cell_selector": {
-                "outer_row": {
-                  "items": [
-                    {
-                      "selector_item_id": "ranklist_series_actor",
-                      "show_name": "剧星榜",
-                      "is_selected": true,
-                      "show_type": 521,
-                      "selector_item_type": ""
-                    },
-                    {
-                      "selector_item_id": "ranklist_actor_fans",
-                      "show_name": "星光榜",
-                      "is_selected": false,
-                      "show_type": 521,
-                      "selector_item_type": ""
-                    }
-                  ]
-                }
-              }
+              "selector_item_type": ""
             },
             {
               "selector_item_id": "series_album",
               "show_name": "系列剧",
               "is_selected": false,
               "show_type": 505,
-              "selector_item_type": "",
-              "sub_cell_selector": {
-                "outer_row": {
-                  "items": [
-                    {
-                      "selector_item_id": "series_album_hot_sc",
-                      "show_name": "推荐榜",
-                      "is_selected": false,
-                      "show_type": 505,
-                      "selector_item_type": ""
-                    },
-                    {
-                      "selector_item_id": "series_album_new_rank",
-                      "show_name": "新季榜",
-                      "is_selected": false,
-                      "show_type": 505,
-                      "selector_item_type": ""
-                    }
-                  ]
-                }
-              }
+              "selector_item_type": ""
             }
           ]
         }

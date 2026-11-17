@@ -869,16 +869,12 @@ func TestParseShortRankReadsActors(t *testing.T) {
 	if c := res.Items[2].Change; c == nil || c.Kind != model.RankNew {
 		t.Fatalf("third change = %+v", c)
 	}
-	var boards []string
+	// The actor ranking stopped listing 剧星榜/星光榜 under its contents
+	// (observed 2026-11-17), so the catalog carries no boards.
 	for _, c := range res.Contents {
-		if c.Selected {
-			for _, b := range c.Boards {
-				boards = append(boards, b.ID)
-			}
+		if c.Selected && (c.ID != ShortRankActors || len(c.Boards) != 0) {
+			t.Fatalf("selected content = %+v", c)
 		}
-	}
-	if strings.Join(boards, ",") != "ranklist_series_actor,ranklist_actor_fans" {
-		t.Fatalf("actor boards = %v", boards)
 	}
 }
 
