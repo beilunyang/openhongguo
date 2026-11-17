@@ -342,7 +342,7 @@ type Transport interface {
 
 | Go | 其他语言 | 作用 |
 |---|---|---|
-| `ResolvePlayback` | `resolvePlayback(episodeId)` | 加载一集的播放模型：各清晰度的地址、编码和码率 |
+| `ResolvePlayback` | `resolvePlayback(episodeId)` | 加载一集的各清晰度地址、编码和码率 |
 | `ContentKey` | 并入 `resolvePlayback` 的结果 | 从播放模型算出加密分集的内容密钥 |
 | `ResetDevice` | `resetDevice()` | 丢弃当前匿名设备，并注册一台新设备 |
 <!-- /gen:methods-go -->

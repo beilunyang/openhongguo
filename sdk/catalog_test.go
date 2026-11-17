@@ -1,6 +1,7 @@
 package sdk_test
 
 import (
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"errors"
@@ -70,11 +71,12 @@ func testClient(t *testing.T, handler http.Handler) (*sdk.Client, *logCapture) {
 func happyHandler(t *testing.T, seen *[]captured) http.Handler {
 	t.Helper()
 	files := map[string]string{
-		protocol.PathDiscover: "discover-response.json",
-		protocol.PathSearch:   "search-response.json",
-		protocol.PathSeries:   "series-response.json",
-		protocol.PathPlayback: "drm-playback.json",
-		protocol.PathRegister: "register-response.json",
+		protocol.PathDiscover:   "discover-response.json",
+		protocol.PathSearch:     "search-response.json",
+		protocol.PathSeries:     "series-response.json",
+		protocol.PathPlayback:   "drm-playback.json",
+		protocol.PathPlaybackV5: "drm-playback.json",
+		protocol.PathRegister:   "register-response.json",
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
@@ -446,17 +448,33 @@ func assertAnonymousWire(t *testing.T, seen []captured) {
 			if hit.Header.Get("x-gorgon") == "" || hit.Header.Get("x-ss-stub") == "" {
 				t.Fatal("series signature missing")
 			}
-		case protocol.PathPlayback:
+		case protocol.PathPlaybackV5:
 			played = true
-			if !strings.HasPrefix(hit.RawQuery, "iid=") || strings.Contains(hit.RawQuery, " ") {
-				t.Fatal("playback query was re-encoded")
+			q, _ := url.ParseQuery(hit.RawQuery)
+			if q.Get("version_code") != "74332" || q.Get("device_id") != "7100000000000001" || q.Get("iid") != "7100000000000002" {
+				t.Fatalf("playback query = %s", hit.RawQuery)
 			}
-			if !strings.Contains(hit.Body, `"video_id":"7100000000000201"`) || !strings.Contains(hit.Body, `"need_all_video_definition":true`) {
-				t.Fatalf("playback body = %s", hit.Body)
+			zr, err := gzip.NewReader(strings.NewReader(hit.Body))
+			if err != nil {
+				t.Fatalf("playback body is not gzip: %v", err)
 			}
-			if hit.Header.Get("x-gorgon") == "" || hit.Header.Get("x-ss-stub") == "" {
-				t.Fatal("playback signature missing")
+			plain, err := io.ReadAll(zr)
+			if err != nil {
+				t.Fatal(err)
 			}
+			if !strings.Contains(string(plain), `"mixed_video_id_map":{"1004":["7100000000000201"]}`) || !strings.Contains(string(plain), `"need_all_video_definition":true`) {
+				t.Fatalf("playback body = %s", plain)
+			}
+			if hit.Header.Get("Content-Encoding") != "gzip" || hit.Header.Get("x-medusa") == "" || hit.Header.Get("x-helios") == "" || hit.Header.Get("x-khronos") == "" || hit.Header.Get("x-ss-stub") == "" {
+				t.Fatal("playback V5 signature missing")
+			}
+			for _, h := range []string{"x-argus", "x-ladon", "x-gorgon"} {
+				if hit.Header.Get(h) != "" {
+					t.Fatalf("playback V5 carries legacy %s", h)
+				}
+			}
+		case protocol.PathPlayback:
+			t.Fatal("playback fell back to the legacy route")
 		default:
 			t.Fatalf("unexpected path %s", hit.Path)
 		}
