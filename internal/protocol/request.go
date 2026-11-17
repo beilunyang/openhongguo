@@ -244,7 +244,9 @@ func SignedCuePairs(id SearchIdentity, cueType, limit int) [][2]string {
 // SignedSuggestPairs is the ordered search-suggest query.
 func SignedSuggestPairs(id SearchIdentity, keyword string) [][2]string {
 	return append(DeviceQueryPairs(id),
-		[2]string{"query", keyword},
+		// The 7.4.3.32 client names the prefix q (captured 2026-11-18); the
+		// service still reads query as well and answers both the same.
+		[2]string{"q", keyword},
 		[2]string{"count", "10"},
 		[2]string{"search_source", SearchSourceHome},
 		[2]string{"user_is_login", "0"},

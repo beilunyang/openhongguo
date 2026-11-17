@@ -1042,3 +1042,13 @@ func TestOneDeviceDrivesQueryRegistrationAndUserAgent(t *testing.T) {
 		t.Fatalf("default register = %v", h)
 	}
 }
+
+func TestSuggestPairsNameThePrefixQ(t *testing.T) {
+	got := map[string]string{}
+	for _, kv := range SignedSuggestPairs(SearchIdentity{DeviceID: "7100000000000001", InstallID: "7100000000000002"}, "总裁") {
+		got[kv[0]] = kv[1]
+	}
+	if got["q"] != "总裁" || got["query"] != "" || got["search_source"] != SearchSourceHome {
+		t.Fatalf("suggest pairs = %v", got)
+	}
+}
