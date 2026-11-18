@@ -12,7 +12,7 @@ services:
     build:
       context: ..
       dockerfile: Dockerfile
-    # Published by .github/workflows/signer.yml, such as <user>/openhongguo-signer:v0.3.1.
+    # Published by .github/workflows/signer.yml as beilunyang/openhongguo-signer.
     image: ${SIGNER_IMAGE:-openhongguo-signer:latest}
     container_name: openhongguo-signer
     restart: unless-stopped

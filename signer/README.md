@@ -65,23 +65,30 @@ caddy 通过 compose 内部网络访问签名服务，不受 `SIGNER_BIND` 影�
 
 ### 镜像
 
-每次发布 SDK 新版本（GitHub Release 发布）时，`.github/workflows/signer.yml` 会构建镜像，推送到 Docker Hub：
+镜像公开发布在 Docker Hub：[beilunyang/openhongguo-signer](https://hub.docker.com/r/beilunyang/openhongguo-signer)，支持 amd64 和 arm64，拉取不需要登录。
 
 ```text
-<Docker Hub 用户名>/openhongguo-signer:<版本 tag>   例如 v0.3.1
-<Docker Hub 用户名>/openhongguo-signer:latest
+beilunyang/openhongguo-signer:<版本 tag>   例如 v0.4.0
+beilunyang/openhongguo-signer:latest       最新发布的版本
 ```
 
-已发布的版本可以在 Actions 页面手动运行 signer 工作流，填入 tag 重新构建。
+只想试一下时，一条命令就能跑起来：
 
-工作流需要在仓库设置里配置：
+```sh
+docker run -d --name openhongguo-signer -p 127.0.0.1:19830:19830 beilunyang/openhongguo-signer:latest
+curl -s http://127.0.0.1:19830/ready    # 大约 10～20 秒后返回 "ready":true
+```
+
+需要鉴权时加上 `-e SIGNER_TOKEN=<token>`。
+
+每次发布 SDK 新版本（GitHub Release 发布）时，`.github/workflows/signer.yml` 会构建镜像并推送这两个标签。已发布的版本可以在 Actions 页面手动运行 signer 工作流，填入 tag 重新构建。
+
+工作流用到仓库设置里的两项配置：
 
 | 名称 | 类型 | 说明 |
 |---|---|---|
-| `DOCKERHUB_USERNAME` | Variable | Docker Hub 用户名，也是镜像的命名空间 |
+| `DOCKERHUB_USERNAME` | Variable | Docker Hub 用户名，也是镜像的命名空间，现在是 `beilunyang` |
 | `DOCKERHUB_TOKEN` | Secret | Docker Hub 访问令牌，需要 Read & Write 权限 |
-
-镜像仓库第一次推送时自动创建。是否公开，在 Docker Hub 的仓库设置里修改。
 
 ### 部署
 
@@ -100,15 +107,13 @@ caddy 通过 compose 内部网络访问签名服务，不受 `SIGNER_BIND` 影�
 
    需要修改的项：
 
-   - `SIGNER_IMAGE`：要运行的镜像，例如 `<Docker Hub 用户名>/openhongguo-signer:v0.3.1`；
+   - `SIGNER_IMAGE`：要运行的镜像，例如 `beilunyang/openhongguo-signer:v0.4.0`，或者 `beilunyang/openhongguo-signer:latest`；
    - `SIGNER_DOMAIN`：caddy 使用的域名；
    - `SIGNER_TOKEN`：对外开放时建议设置，可以这样生成：
 
      ```sh
      sed -i "s/^SIGNER_TOKEN=.*/SIGNER_TOKEN=$(openssl rand -hex 32)/" .env
      ```
-
-   Docker Hub 仓库是私有的话，先在服务器上运行 `docker login`。
 
 3. 启动：
 
@@ -224,7 +229,7 @@ curl -s http://127.0.0.1:19830/feature-hash \
 | 看日志 | `docker compose logs -f openhongguo-signer` |
 | 看 caddy 日志 | `docker compose logs -f caddy` |
 | 重启 | `docker compose restart openhongguo-signer` |
-| 升级到新版本 | 修改 `.env` 里的 `SIGNER_IMAGE`，然后运行 `docker compose pull && docker compose up -d` |
+| 升级到新版本 | 修改 `.env` 里的 `SIGNER_IMAGE`（用 `latest` 时不用改），然后运行 `docker compose pull && docker compose up -d` |
 | 从源码重新部署 | 重新 rsync，然后运行 `docker compose up -d --build` |
 | 修改配置 | 修改 `.env`，然后运行 `docker compose up -d` |
 
@@ -236,7 +241,7 @@ curl -s http://127.0.0.1:19830/feature-hash \
 
 | 变量 | 默认值 | 说明 |
 |---|---|---|
-| `SIGNER_IMAGE` | `openhongguo-signer:latest` | 要运行的镜像。留空时使用本地构建的镜像 |
+| `SIGNER_IMAGE` | `openhongguo-signer:latest`（本地构建的镜像） | 要运行的镜像。`.env.example` 里写的是 `beilunyang/openhongguo-signer:latest` |
 | `SIGNER_DOMAIN` | `localhost` | caddy 使用的域名。`localhost` 只签发本地自签证书，用于试用 |
 | `SIGNER_BIND` | `127.0.0.1` | 签名服务端口在宿主机上的映射地址 |
 | `SIGNER_PUBLISH_PORT` | `19830` | 宿主机上的端口 |

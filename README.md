@@ -294,7 +294,7 @@ type Transport interface {
 | 方式 | 怎样开启 | 适用场景 |
 |---|---|---|
 | 内置签名（默认） | 不设 `SignerURL` | 平时使用。纯 Go 实现，不依赖外部服务 |
-| 签名服务 | 设置 `SignerURL` | 内置签名失效时（例如 App 升级后签名算法变化）。需要先部署 [openhongguo-signer](signer/README.md) |
+| 签名服务 | 设置 `SignerURL` | 内置签名失效时（例如 App 升级后签名算法变化）。需要先部署 [openhongguo-signer](signer/README.md)，镜像是 Docker Hub 上的 [`beilunyang/openhongguo-signer`](https://hub.docker.com/r/beilunyang/openhongguo-signer) |
 
 ```go
 // 内置签名
