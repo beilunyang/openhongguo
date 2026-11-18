@@ -15,7 +15,7 @@ var (
 	ErrInvalidOptions = errors.New("openhongguo: invalid client options")
 	// ErrProfileNotFound 表示还没有保存过设备档案。ProfileStore 首次读取时返回它。
 	ErrProfileNotFound = errors.New("openhongguo: profile not found")
-	// ErrSignerUnavailable 表示请求需要签名，而客户端没有可用的签名器。
+	// ErrSignerUnavailable 表示请求需要签名，而客户端没有可用的签名器，或者签名服务不可用。
 	ErrSignerUnavailable = errors.New("openhongguo: signer unavailable")
 	// ErrAuthenticationRequired 表示内容需要登录才能访问，匿名客户端无法继续。
 	ErrAuthenticationRequired = errors.New("openhongguo: authentication required")
