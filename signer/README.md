@@ -12,6 +12,7 @@ openhongguo-signer 是签名服务。它在 unidbg 里运行 App 自带的 `libm
 | `deploy/` | 部署到服务器的文件：docker-compose、Caddyfile、`.env.example` |
 | `compare/` | 对照测试程序，独立的 Go module |
 | `scripts/compare.sh` | 对照测试的入口脚本 |
+| `src/research/` | 逆向分析工具，不打进镜像，见[分析工具](#分析工具) |
 
 ## 本地运行
 
@@ -254,3 +255,24 @@ curl -s http://127.0.0.1:19830/feature-hash \
 |---|---|---|
 | `SIGNER_HOST` | `127.0.0.1`（镜像内为 `0.0.0.0`） | 监听地址 |
 | `SIGNER_PORT` | `19830` | 监听端口 |
+
+## 分析工具
+
+`src/research/` 是分析 `libmetasec_ml.so` 用的工具，在模拟器里挂钩子观察签名过程，用来把签名算法移植到 Go。它们只在本地运行，不进镜像。
+
+```sh
+./gradlew -q research --args="<工具> [参数]"
+```
+
+| 工具 | 作用 |
+|---|---|
+| `syscalls` | 列出一次签名发出的系统调用和调用位置 |
+| `determinism` | 从启动起固定时钟、`rand()` 和计数器，连签几次，检查输出是否可复现 |
+| `b64` | 打印每次 base64 编码前的原始字节（签名头编码前的样子） |
+| `writers <地址> <长度>` | 列出签名时写入这段内存的代码位置 |
+| `at <so 偏移> [次数]` | 在这个位置打印寄存器、调用栈和 `x0`、`x1` 指向的内存 |
+| `natives` | 列出签名时 so 里的虚拟机调用的原生函数 |
+
+钩子要在第一次签名之前装好。unicorn 会缓存已经执行过的代码块，之后再装的代码钩子不会触发，所以工具都是先装钩子，再签名两次，只看第二次。
+
+服务代码为这些工具留了两个接口，默认不改变服务的行为：`CustomSyscallHandler.setSyscallObserver` 在系统调用执行前观察或接管它，`MetasecEmulator.setJavaClock` 替换 JNI 回调里的时钟。

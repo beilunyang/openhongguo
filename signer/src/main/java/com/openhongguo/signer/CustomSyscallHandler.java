@@ -36,6 +36,19 @@ public class CustomSyscallHandler extends ARM64SyscallHandler {
         super(svcMemory);
     }
 
+    /**
+     * Sees each syscall before it runs. Returning true means the observer
+     * handled it (and set x0); the default handler is then skipped.
+     * Research tools use it to log syscalls and pin the clock and entropy.
+     */
+    public interface SyscallObserver {
+        boolean before(Backend backend, Emulator<?> emulator, int nr);
+    }
+
+    private volatile SyscallObserver syscallObserver;
+
+    public void setSyscallObserver(SyscallObserver observer) { this.syscallObserver = observer; }
+
     public void setModuleBase(long base) { this.moduleBase = base; }
     public void setVtableOffset(long offset) { this.vtableOffset = offset; }
     public void setFunctionPointerOffset(long offset) { this.funcPtrOffset = offset; }
@@ -227,6 +240,9 @@ public class CustomSyscallHandler extends ARM64SyscallHandler {
         }
         int nrBefore = backend.reg_read(Arm64Const.UC_ARM64_REG_X8).intValue();
         long domain = backend.reg_read(Arm64Const.UC_ARM64_REG_X0).longValue();
+        if (swi == 0 && syscallObserver != null && syscallObserver.before(backend, (Emulator<?>) user, nrBefore)) {
+            return;
+        }
         super.hook(backend, intno, swi, user);
         if (nrBefore == 198 && domain == 16) { // socket(AF_NETLINK, ...)
             int fd = backend.reg_read(Arm64Const.UC_ARM64_REG_X0).intValue();

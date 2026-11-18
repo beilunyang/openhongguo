@@ -44,6 +44,26 @@ public class MetasecEmulator extends AbstractJni {
     private final AtomicInteger futexCallCount = new AtomicInteger(0);
     private final Map<Long, AtomicInteger> futexAddrCounts = new ConcurrentHashMap<>();
 
+    /** The Java clock the native code reads through JNI. */
+    public interface JavaClock {
+        long currentTimeMillis();
+        long nanoTime();
+    }
+
+    private volatile JavaClock javaClock = new JavaClock() {
+        public long currentTimeMillis() { return System.currentTimeMillis(); }
+        public long nanoTime() { return System.nanoTime(); }
+    };
+
+    /** Replaces the JNI clock; research tools pin it for reproducible output. */
+    public void setJavaClock(JavaClock clock) { this.javaClock = clock; }
+
+    /** The emulator, for research tools that hook it. */
+    public AndroidEmulator emulator() { return emulator; }
+
+    /** The loaded libmetasec_ml.so base address. */
+    public long moduleBase() { return module.base; }
+
     public MetasecEmulator(File soFile) throws IOException {
         emulator = new CustomEmulator(packageName);
         // Cooperative scheduler: pthread_create becomes a MarshmallowThread and
@@ -1456,12 +1476,12 @@ public class MetasecEmulator extends AbstractJni {
     public long callStaticLongMethodV(BaseVM vm, DvmClass dvmClass, String signature, VaList vaList) {
         switch (signature) {
             case "java/lang/System->currentTimeMillis()J":
-                return System.currentTimeMillis();
+                return javaClock.currentTimeMillis();
             case "java/lang/System->nanoTime()J":
-                return System.nanoTime();
+                return javaClock.nanoTime();
             case "android/os/SystemClock->elapsedRealtime()J":
             case "android/os/SystemClock->uptimeMillis()J":
-                return 3_600_000L + System.nanoTime() / 1_000_000L;
+                return 3_600_000L + javaClock.nanoTime() / 1_000_000L;
         }
         try {
             return super.callStaticLongMethodV(vm, dvmClass, signature, vaList);
