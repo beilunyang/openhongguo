@@ -1,5 +1,5 @@
 group = "dev.openhongguo.flutter"
-version = "0.3.1"
+version = "0.4.0"
 
 buildscript {
     val kotlinVersion = "2.4.0"
