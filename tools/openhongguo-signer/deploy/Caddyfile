@@ -1,0 +1,6 @@
+# HTTPS in front of openhongguo-signer. Caddy obtains and renews the
+# certificate for SIGNER_DOMAIN; the signer itself checks SIGNER_TOKEN.
+{$SIGNER_DOMAIN} {
+	encode gzip
+	reverse_proxy openhongguo-signer:19830
+}

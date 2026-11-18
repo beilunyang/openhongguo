@@ -1,0 +1,4 @@
+build/
+.gradle/
+__pycache__/
+hs_err_*.log

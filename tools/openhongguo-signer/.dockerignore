@@ -1,0 +1,6 @@
+build
+.gradle
+compare
+deploy
+scripts
+hs_err_*.log

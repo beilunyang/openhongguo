@@ -1,0 +1,56 @@
+# openhongguo-signer. Run from tools/openhongguo-signer/deploy:
+#   docker compose up -d            # pulls SIGNER_IMAGE
+#   docker compose up -d --build    # builds from this checkout instead
+# Settings come from .env (see .env.example).
+#
+#   remote caller --HTTPS--> caddy :443 --> openhongguo-signer :19830
+#   this server   -------------------------> 127.0.0.1:19830
+#
+# Without caddy: docker compose up -d openhongguo-signer
+services:
+  openhongguo-signer:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    # Published by .github/workflows/signer.yml, such as <user>/openhongguo-signer:v0.3.1.
+    image: ${SIGNER_IMAGE:-openhongguo-signer:latest}
+    container_name: openhongguo-signer
+    restart: unless-stopped
+    environment:
+      # Empty means no auth. Set it whenever others can reach the service.
+      SIGNER_TOKEN: ${SIGNER_TOKEN:-}
+      SIGNER_MAX_FAILURES: ${SIGNER_MAX_FAILURES:-3}
+    # The service listens on 0.0.0.0 inside the container. SIGNER_BIND picks
+    # the host address: 127.0.0.1 keeps it on this server (caddy reaches it
+    # over the compose network either way); 0.0.0.0 opens it on every
+    # interface (Docker's rules bypass ufw, so use a security group).
+    ports:
+      - "${SIGNER_BIND:-127.0.0.1}:${SIGNER_PUBLISH_PORT:-19830}:19830"
+    mem_limit: 1g
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  caddy:
+    image: caddy:2
+    container_name: openhongguo-signer-caddy
+    restart: unless-stopped
+    depends_on: [openhongguo-signer]
+    environment:
+      # Caddy gets a certificate for this domain. localhost serves a local
+      # self-signed certificate, for trying it out.
+      SIGNER_DOMAIN: ${SIGNER_DOMAIN:-localhost}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+volumes:
+  caddy_data:
+  caddy_config:
