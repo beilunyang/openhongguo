@@ -65,7 +65,16 @@ public class MetasecEmulator extends AbstractJni {
     public long moduleBase() { return module.base; }
 
     public MetasecEmulator(File soFile) throws IOException {
+        this(soFile, null);
+    }
+
+    /**
+     * beforeLoad runs once the emulator exists and before libmetasec_ml.so is
+     * loaded, so research tools can pin the clock before its initializers run.
+     */
+    public MetasecEmulator(File soFile, java.util.function.Consumer<AndroidEmulator> beforeLoad) throws IOException {
         emulator = new CustomEmulator(packageName);
+        if (beforeLoad != null) beforeLoad.accept(emulator);
         // Cooperative scheduler: pthread_create becomes a MarshmallowThread and
         // futex wait/wake switches tasks. Without this, clone only returns a tid.
         emulator.getSyscallHandler().setEnableThreadDispatcher(true);
