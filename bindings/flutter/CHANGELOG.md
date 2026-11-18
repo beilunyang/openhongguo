@@ -1,3 +1,8 @@
+## 0.4.0
+
+- 新增选项 `signerUrl` 和 `signerToken`（Go 是 `SignerURL`、`SignerToken`），可以把请求签名交给 openhongguo-signer 签名服务。不设时仍用内置签名。签名服务不可用时返回 `SIGNER_UNAVAILABLE`，错误信息带有签名服务给出的原因，不会回退到内置签名。命令行工具用环境变量 `OHG_SIGNER_URL` 和 `OHG_SIGNER_TOKEN`。
+- 新增签名服务 openhongguo-signer（仓库的 `signer/` 目录）：在 unidbg 里运行 App 自带的签名库，通过 HTTP 提供签名。镜像发布在 Docker Hub 的 `beilunyang/openhongguo-signer`。
+
 ## 0.3.1
 
 - 播放改走 V5 取址接口，请求参数和签名与 7.4.3.32 版客户端一致。0.3.0 取播放模型失败的问题在这一版修复。
