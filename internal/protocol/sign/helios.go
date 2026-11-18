@@ -7,32 +7,36 @@ import (
 	"fmt"
 )
 
-func assembleHelios(khronos, random uint32) string {
-	seed := append(le32(random), []byte(appID)...)
-	digest := md5Raw(seed)
-	ascii := []byte(hex.EncodeToString(digest[:]))
+// heliosV5 builds x-helios as the v04.10.03 SDK does: a 34-round ARX cipher
+// over "<ts>-<license>-<aid>", keyed from md5(random || aid). The random is
+// sent in the clear as the first 4 bytes.
+func heliosV5(ts, random uint32) string {
+	seed := md5Raw(append(le32(random), []byte(appID)...))
+	ascii := []byte(hex.EncodeToString(seed[:]))
 	words := make([]uint64, 4)
-	for i := 0; i < 4; i++ {
-		words[i] = binary.LittleEndian.Uint64(ascii[i*8 : i*8+8])
+	for i := range words {
+		words[i] = binary.LittleEndian.Uint64(ascii[i*8:])
 	}
 	table := diffuse(words)
-	padded := heliosPad(khronos)
-	var output []byte
-	for off := 0; off < len(padded); off += 16 {
-		chunk := padded[off : off+16]
-		a := binary.LittleEndian.Uint64(chunk[:8])
-		b := binary.LittleEndian.Uint64(chunk[8:])
-		for _, t := range table[:34] {
-			b = t ^ (a + ror64(b, 8))
+	text := []byte(fmt.Sprintf("%d-%s-%s", ts, playbackV5License, appID))
+	padding := byte(16 - len(text)%16)
+	for range int(padding) {
+		text = append(text, padding)
+	}
+	out := le32(random)
+	for at := 0; at < len(text); at += 16 {
+		a := binary.LittleEndian.Uint64(text[at:])
+		b := binary.LittleEndian.Uint64(text[at+8:])
+		for _, key := range table[:34] {
+			b = key ^ (a + ror64(b, 8))
 			a = b ^ ror64(a, 61)
 		}
-		var ab [16]byte
-		binary.LittleEndian.PutUint64(ab[:8], a)
-		binary.LittleEndian.PutUint64(ab[8:], b)
-		output = append(output, ab[:]...)
+		var block [16]byte
+		binary.LittleEndian.PutUint64(block[:8], a)
+		binary.LittleEndian.PutUint64(block[8:], b)
+		out = append(out, block[:]...)
 	}
-	result := append(le32(random), output...)
-	return base64.StdEncoding.EncodeToString(result)
+	return base64.StdEncoding.EncodeToString(out)
 }
 
 func diffuse(words []uint64) []uint64 {
@@ -51,16 +55,4 @@ func diffuse(words []uint64) []uint64 {
 		queue = queue[1:]
 	}
 	return table
-}
-
-func heliosPad(khronos uint32) []byte {
-	text := []byte(fmt.Sprintf("%d-%s-%s", khronos, channelID, appID))
-	fill := byte(16 - (len(text) % 16))
-	size := ((len(text) + 1 + 15) / 16) * 16
-	out := make([]byte, size)
-	for i := range out {
-		out[i] = fill
-	}
-	copy(out, text)
-	return out
 }

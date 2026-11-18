@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 )
 
 // SignGET builds the query string and portable signature headers for one GET.
@@ -31,16 +33,15 @@ func signRequest(path string, pairs [][2]string, nowMillis int64, deviceID, vers
 		ent = drawEntropy(nowMillis)
 	}
 	hasBody := body != nil
-	bodyMD5 := make([]byte, 16)
-	if hasBody {
-		sum := md5Raw(body)
-		bodyMD5 = sum[:]
-	}
 	base := uint64(nowMillis)
 	var query string
 	var ticket uint64
 	var khronos uint32
-	for offset := uint64(0); offset < 32; offset++ {
+	var medusaIn medusaV5Input
+	// x-medusa field 13 has 16 variants picked by a hash of the request; this
+	// package implements some of them, so step _rticket by a millisecond
+	// until the request picks one. A request finds one within a few tries.
+	for offset := uint64(0); offset < 256; offset++ {
 		ticket = base + offset
 		khronos = uint32(ticket / 1000)
 		withTicket := append([][2]string{}, pairs...)
@@ -49,18 +50,14 @@ func signRequest(path string, pairs [][2]string, nowMillis int64, deviceID, vers
 			[2]string{"_rticket", strconv.FormatUint(ticket, 10)},
 		)
 		query = encodeQuery(withTicket)
-		sum := sm3Sum([]byte(query))
-		if branchOf(sum[:], bodyMD5, le32(khronos)) != 1 {
+		var ok bool
+		if medusaIn, ok = newMedusaV5Input(query, body, khronos); ok {
 			break
 		}
 	}
 	if ent.NowSecs == 0 {
 		ent.NowSecs = int64(khronos)
 	}
-	// x-medusa hashes this URL. The service accepts it with this host on
-	// requests sent to the fqnovel hosts as well (observed 2026-10-24), so it
-	// does not follow the origin a request goes to.
-	rawURL := "https://reading.snssdk.com" + path + "?" + query
 	headers := map[string]string{
 		"Accept":                    "application/json; charset=utf-8,application/x-protobuf",
 		"x-xs-from-web":             "0",
@@ -73,8 +70,8 @@ func signRequest(path string, pairs [][2]string, nowMillis int64, deviceID, vers
 		"x-ladon":                   base64.StdEncoding.EncodeToString(be32(khronos)),
 		"x-argus":                   base64.StdEncoding.EncodeToString(le32(khronos)),
 		"x-gorgon":                  xGorgon(query, body, hasBody, khronos, ent.GorgonRandom),
-		"x-helios":                  assembleHelios(khronos, ent.HeliosRandom),
-		"x-medusa":                  assembleMedusa(rawURL, body, hasBody, khronos, deviceID, versionName, ent),
+		"x-helios":                  heliosV5(khronos, ent.HeliosRandom),
+		"x-medusa":                  assembleMedusaV5(medusaIn, deviceID, processMedusaEnv(), ent.medusaRandom()),
 		"x-tt-dt":                   "",
 	}
 	if hasBody {
@@ -104,6 +101,23 @@ func encodeComponent(s string) string {
 		fmt.Fprintf(&b, "%%%02X", c)
 	}
 	return b.String()
+}
+
+// medusaRandom maps the drawn entropy onto the three rand() values the SDK
+// uses. rand() returns 31-bit values.
+func (e Entropy) medusaRandom() MedusaRandom {
+	return MedusaRandom{Message: e.MessageRandom & 0x7fffffff, Key: e.Random & 0x7fffffff, Packed: e.PackedRandom & 0x7fffffff}
+}
+
+var (
+	medusaEnvOnce sync.Once
+	medusaEnv     MedusaEnv
+)
+
+// processMedusaEnv is the environment this process reports, fixed at first use.
+func processMedusaEnv() MedusaEnv {
+	medusaEnvOnce.Do(func() { medusaEnv = DefaultMedusaEnv(time.Now().UnixMilli()) })
+	return medusaEnv
 }
 
 func drawEntropy(nowMillis int64) Entropy {

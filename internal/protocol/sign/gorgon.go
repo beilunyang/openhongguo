@@ -35,9 +35,10 @@ func xGorgon(query string, body []byte, hasBody bool, khronos, random uint32) st
 	input = append(input, queryMD5[:4]...)
 	input = append(input, bodyMD5[:4]...)
 	input = append(input, 0, 0, 0, 0)
-	input = append(input, le32(gorgonSDKVersion)...)
+	input = append(input, le32(medusaV5SDKCode)...)
 	input = append(input, be32(khronos)...)
-	key := []byte{0x4a, 0x40, 0x16, byte((random >> 8) & 255), 0x47, 0x6c, 0x01, byte(random & 255)}
+	// 0x08, 0x00: the v04.10.03 SDK's marker (v04.06.04 used 0x40, 0x01).
+	key := []byte{0x4a, 0x08, 0x16, byte((random >> 8) & 255), 0x47, 0x6c, 0x00, byte(random & 255)}
 	out := rc4Gorgon(input, key)
 	n := len(out)
 	for i := 0; i < n; i++ {
@@ -49,7 +50,7 @@ func xGorgon(query string, body []byte, hasBody bool, khronos, random uint32) st
 		}
 		out[i] = byte(^(reverseBits(next^swapped) ^ 20))
 	}
-	result := []byte{0x84, 0x04, byte(random & 255), byte((random >> 8) & 255), 0x40, 0x01}
+	result := []byte{0x84, 0x04, byte(random & 255), byte((random >> 8) & 255), 0x08, 0x00}
 	result = append(result, out...)
 	return hex.EncodeToString(result)
 }

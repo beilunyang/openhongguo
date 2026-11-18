@@ -293,7 +293,7 @@ type Transport interface {
 
 | 方式 | 怎样开启 | 适用场景 |
 |---|---|---|
-| 内置签名（默认） | 不设 `SignerURL` | 平时使用。纯 Go 实现，不依赖外部服务 |
+| 内置签名（默认） | 不设 `SignerURL` | 平时使用。纯 Go 实现，输出与 App 自带的签名库（v04.10.03）一致，不依赖外部服务 |
 | 签名服务 | 设置 `SignerURL` | 内置签名失效时（例如 App 升级后签名算法变化）。需要先部署 [openhongguo-signer](signer/README.md)，镜像是 Docker Hub 上的 [`beilunyang/openhongguo-signer`](https://hub.docker.com/r/beilunyang/openhongguo-signer) |
 
 ```go
@@ -320,6 +320,7 @@ client, err := adapters.NewClient("anonymous.json", sdk.Options{
 >
 > - 签名方式在创建客户端时确定，之后不能切换。
 > - 只设 `SignerToken`、不设 `SignerURL` 时，仍然使用内置签名。
+> - x-medusa 里有一个字段，签名库按请求的哈希从 16 种算法里挑一种来算。内置签名目前实现了其中 2 种，签名时会把 `_rticket` 往后调几毫秒，直到请求选中已实现的那种，所以 `_rticket` 可能比当前时间晚几毫秒。
 
 使用签名服务时，需要签名的请求发出前，SDK 把 URL 和请求体发给签名服务，用返回的签名头替换内置签名算出的签名头。发给签名服务的请求同样经过 `Transport`。
 
