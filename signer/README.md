@@ -179,7 +179,7 @@ SIGNER_TOKEN=<token> signer/scripts/compare.sh --relay https://<SIGNER_DOMAIN>
 
 ### `POST /feature-hash`
 
-设置了 `SIGNER_TOKEN` 时，请求必须带 `Authorization: Bearer <token>`。
+设置了 `SIGNER_TOKEN` 时，请求必须带 token，写成 `Authorization: Bearer <token>` 或 `X-Signer-Token: <token>` 都可以。SDK 用后一种，因为 SDK 的 Transport 拒绝发送 `Authorization` 头。
 
 请求体是 JSON：
 
@@ -240,7 +240,7 @@ curl -s http://127.0.0.1:19830/feature-hash \
 | `SIGNER_DOMAIN` | `localhost` | caddy 使用的域名。`localhost` 只签发本地自签证书，用于试用 |
 | `SIGNER_BIND` | `127.0.0.1` | 签名服务端口在宿主机上的映射地址 |
 | `SIGNER_PUBLISH_PORT` | `19830` | 宿主机上的端口 |
-| `SIGNER_TOKEN` | 空 | 设置后 `/feature-hash` 要求 Bearer token；为空时不鉴权 |
+| `SIGNER_TOKEN` | 空 | 设置后 `/feature-hash` 要求 token；为空时不鉴权 |
 | `SIGNER_MAX_FAILURES` | `3` | 连续签名失败多少次后退出重启 |
 
 不用 Docker、直接运行 `build/install/openhongguo-signer/bin/openhongguo-signer` 时，还可以用以下变量：

@@ -14,7 +14,11 @@ public class SignerServer {
     static final String SERVICE = "openhongguo-signer";
 
     private static MetasecEmulator emu;
-    /** When set, /feature-hash requires "Authorization: Bearer <token>". */
+    /**
+     * When set, /feature-hash requires the token, as "Authorization: Bearer
+     * <token>" or "X-Signer-Token: <token>". The SDK uses the second: its
+     * transports refuse Authorization headers.
+     */
     private static String token;
     private static final int MAX_FAILURES = Integer.parseInt(envOr("SIGNER_MAX_FAILURES", "3"));
     private static int failures;
@@ -30,10 +34,14 @@ public class SignerServer {
 
     private static boolean authorized(HttpExchange exchange) {
         if (token == null) return true;
-        String auth = exchange.getRequestHeaders().getFirst("Authorization");
-        if (auth == null || !auth.startsWith("Bearer ")) return false;
+        String given = exchange.getRequestHeaders().getFirst("X-Signer-Token");
+        if (given == null) {
+            String auth = exchange.getRequestHeaders().getFirst("Authorization");
+            if (auth == null || !auth.startsWith("Bearer ")) return false;
+            given = auth.substring(7);
+        }
         return java.security.MessageDigest.isEqual(
-                auth.substring(7).trim().getBytes(StandardCharsets.UTF_8),
+                given.trim().getBytes(StandardCharsets.UTF_8),
                 token.getBytes(StandardCharsets.UTF_8));
     }
 
