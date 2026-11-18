@@ -139,5 +139,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         run: |
+          # The CHANGELOG section for this version goes first; GitHub's
+          # generated notes (PRs, contributors, compare link) follow it.
+          awk -v v="## $VERSION" '$0==v{f=1;next} /^## /{f=0} f' bindings/flutter/CHANGELOG.md \
+            | sed '/./,$!d' > "$RUNNER_TEMP/notes.md"
           gh release create "$TAG" dist/OpenhongguoCore.xcframework.zip dist/natives.tgz \
-            --title "$TAG" --generate-notes --verify-tag
+            --title "$TAG" --notes-file "$RUNNER_TEMP/notes.md" --generate-notes --verify-tag
