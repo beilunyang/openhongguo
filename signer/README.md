@@ -1,6 +1,37 @@
-# openhongguo-signer 部署
+# openhongguo-signer
 
-openhongguo-signer 是签名服务。它在 unidbg 里运行 App 自带的 `libmetasec_ml.so`，为请求生成 X-Gorgon、X-Helios、X-Medusa 等签名头。本文说明怎样用 Docker 部署它。
+openhongguo-signer 是签名服务。它在 unidbg 里运行 App 自带的 `libmetasec_ml.so`，为请求生成 X-Gorgon、X-Helios、X-Medusa 等签名头。
+
+## 目录
+
+| 路径 | 内容 |
+|---|---|
+| `src/main/java/com/openhongguo/signer/` | 服务代码：HTTP 服务（`SignerServer`）、SDK 调用（`MetasecEmulator`）、unidbg 的系统调用补丁 |
+| `src/main/resources/` | App 的 `libmetasec_ml.so` 和 SDK 初始化配置 `native-config.txt` |
+| `Dockerfile` | 镜像构建文件，在本目录运行 `docker build .` |
+| `deploy/` | 部署到服务器的文件：docker-compose、Caddyfile、`.env.example` |
+| `compare/` | 对照测试程序，独立的 Go module |
+| `scripts/compare.sh` | 对照测试的入口脚本 |
+
+## 本地运行
+
+需要 JDK 21。
+
+```sh
+cd signer
+./gradlew installDist
+build/install/openhongguo-signer/bin/openhongguo-signer
+```
+
+服务默认监听 `127.0.0.1:19830`，启动大约需要 10～20 秒，日志出现 `HTTP server listening` 后即可调用。
+
+跑对照测试（自动构建、启动服务，测完关闭）：
+
+```sh
+signer/scripts/compare.sh
+```
+
+## Docker 部署
 
 部署包含两个容器：
 
@@ -26,13 +57,13 @@ caddy 通过 compose 内部网络访问签名服务，不受 `SIGNER_BIND` 影�
 > - 能访问服务的人都能签任意请求。对外开放时（经过 caddy 或者 `SIGNER_BIND=0.0.0.0`），建议设置 `SIGNER_TOKEN`。
 > - 映射到 `0.0.0.0` 时，请用云服务器的安全组限制来源 IP。Docker 写入的 iptables 规则会绕过 ufw，ufw 挡不住这个端口。
 
-## 准备
+### 准备
 
 需要一台 Linux 服务器，已安装 Docker 和 Docker Compose 插件。镜像支持 amd64 和 arm64。
 
 使用 caddy 时，还需要一个域名，A 记录指向这台服务器，并且放行 80 和 443 端口（80 端口用于申请证书）。
 
-## 镜像
+### 镜像
 
 每次发布 SDK 新版本（GitHub Release 发布）时，`.github/workflows/signer.yml` 会构建镜像，推送到 Docker Hub：
 
@@ -52,12 +83,12 @@ caddy 通过 compose 内部网络访问签名服务，不受 `SIGNER_BIND` 影�
 
 镜像仓库第一次推送时自动创建。是否公开，在 Docker Hub 的仓库设置里修改。
 
-## 部署
+### 部署
 
 1. 把 `deploy` 目录复制到服务器：
 
    ```sh
-   rsync -a tools/openhongguo-signer/deploy/ server:/opt/openhongguo-signer/deploy/
+   rsync -a signer/deploy/ server:/opt/openhongguo-signer/deploy/
    ```
 
 2. 在服务器上写配置：
@@ -93,13 +124,13 @@ caddy 通过 compose 内部网络访问签名服务，不受 `SIGNER_BIND` 影�
    docker compose up -d openhongguo-signer
    ```
 
-### 从源码构建
+#### 从源码构建
 
-不使用 Docker Hub 上的镜像时，把整个 `tools/openhongguo-signer` 复制到服务器，`SIGNER_IMAGE` 留空，然后构建并启动：
+不使用 Docker Hub 上的镜像时，把整个 `signer` 复制到服务器，`SIGNER_IMAGE` 留空，然后构建并启动：
 
 ```sh
 rsync -a --exclude build --exclude .gradle --exclude 'hs_err*' \
-  tools/openhongguo-signer/ server:/opt/openhongguo-signer/
+  signer/ server:/opt/openhongguo-signer/
 ssh server 'cd /opt/openhongguo-signer/deploy && docker compose up -d --build'
 ```
 
@@ -108,14 +139,14 @@ ssh server 'cd /opt/openhongguo-signer/deploy && docker compose up -d --build'
 如果服务器不方便访问 Maven Central，可以在本机构建镜像，再传到服务器：
 
 ```sh
-cd tools/openhongguo-signer
-docker buildx build --platform linux/amd64 -f deploy/Dockerfile -t openhongguo-signer:latest --load .
+cd signer
+docker buildx build --platform linux/amd64 -t openhongguo-signer:latest --load .
 docker save openhongguo-signer:latest | gzip | ssh server 'gunzip | docker load'
 ```
 
 传过去以后，在服务器上用 `docker compose up -d` 启动，不加 `--build`。
 
-## 检查
+### 检查
 
 在服务器上检查服务是否就绪：
 
@@ -133,7 +164,7 @@ curl -s https://<SIGNER_DOMAIN>/ready
 在本机跑对照测试，确认签名能被服务端接受。没有设置 token 时省略 `SIGNER_TOKEN`：
 
 ```sh
-SIGNER_TOKEN=<token> tools/openhongguo-signer/scripts/compare.sh --relay https://<SIGNER_DOMAIN>
+SIGNER_TOKEN=<token> signer/scripts/compare.sh --relay https://<SIGNER_DOMAIN>
 ```
 
 输出 `MATCH` 表示 Go 签名和签名服务的结果一致。详细说明见 `compare/main.go` 开头的注释。

@@ -1,4 +1,4 @@
-# openhongguo-signer. Run from tools/openhongguo-signer/deploy:
+# openhongguo-signer. Run from signer/deploy:
 #   docker compose up -d            # pulls SIGNER_IMAGE
 #   docker compose up -d --build    # builds from this checkout instead
 # Settings come from .env (see .env.example).
@@ -11,7 +11,7 @@ services:
   openhongguo-signer:
     build:
       context: ..
-      dockerfile: deploy/Dockerfile
+      dockerfile: Dockerfile
     # Published by .github/workflows/signer.yml, such as <user>/openhongguo-signer:v0.3.1.
     image: ${SIGNER_IMAGE:-openhongguo-signer:latest}
     container_name: openhongguo-signer

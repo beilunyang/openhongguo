@@ -1,5 +1,5 @@
 # openhongguo-signer: the real libmetasec_ml.so under unidbg.
-# Build from tools/openhongguo-signer:  docker build -f deploy/Dockerfile .
+# Build from signer/:  docker build .
 #
 # The jar is pure Java with unicorn natives for linux amd64 and arm64
 # inside, so the build stage runs on the build host's platform and only the
