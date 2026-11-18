@@ -20,6 +20,16 @@ type Options struct {
 	ProfileStore ProfileStore
 	// Signer 为需要签名的请求签名；为 nil 时使用 UnavailableSigner。
 	Signer Signer
+	// SignerURL 是 openhongguo-signer 签名服务的地址，例如
+	// "https://signer.example.com"。为空时用内置的 Go 实现签名；设置后，
+	// 带签名头的请求发出前先交给签名服务，用它返回的签名头替换内置实现
+	// 算出的签名头。签名服务的请求同样经过 Transport。签名服务不可用时，
+	// 调用返回 ErrSignerUnavailable，错误信息带有签名服务给出的原因，
+	// 不会回退到内置实现。
+	// 内置实现失效时（例如 App 升级后签名算法变化）可以切过去。
+	SignerURL string
+	// SignerToken 是签名服务的 token，服务端设置了 SIGNER_TOKEN 时才需要。
+	SignerToken string
 	// AuthProvider 附加账号状态；为 nil 时使用 AnonymousProvider。
 	AuthProvider AuthProvider
 	// Logger 接收诊断信息；为 nil 时不记录日志。

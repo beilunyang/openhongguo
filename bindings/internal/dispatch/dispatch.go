@@ -25,6 +25,9 @@ type Config struct {
 	// DeviceResets 是一次调用最多换几台新设备。缺省时用 SDK 的默认值，0 表示关闭。
 	DeviceResets *int         `json:"deviceResets"`
 	Device       model.Device `json:"device"`
+	// SignerURL、SignerToken 见 sdk.Options：设置后由 openhongguo-signer 签名。
+	SignerURL   string `json:"signerUrl"`
+	SignerToken string `json:"signerToken"`
 }
 
 // ParseConfig 解码 raw；raw 为空时返回零值。
@@ -47,6 +50,8 @@ func (cfg Config) Apply(opts *sdk.Options) {
 	opts.RetryAttempts = cfg.RetryAttempts
 	opts.DeviceResets = cfg.DeviceResets
 	opts.Device = cfg.Device
+	opts.SignerURL = cfg.SignerURL
+	opts.SignerToken = cfg.SignerToken
 }
 
 // method 是一个可按名字调用的 SDK 方法：args 是参数数组的各项。

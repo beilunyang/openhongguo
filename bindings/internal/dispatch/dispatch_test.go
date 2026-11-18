@@ -163,3 +163,15 @@ func TestDeviceResetsPassesThrough(t *testing.T) {
 		}
 	}
 }
+
+func TestSignerPassesThrough(t *testing.T) {
+	cfg, err := dispatch.ParseConfig(`{"signerUrl":"https://signer.example.com","signerToken":"t"}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var opts sdk.Options
+	cfg.Apply(&opts)
+	if opts.SignerURL != "https://signer.example.com" || opts.SignerToken != "t" {
+		t.Errorf("SignerURL = %q, SignerToken = %q", opts.SignerURL, opts.SignerToken)
+	}
+}

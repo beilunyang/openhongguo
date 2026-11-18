@@ -161,6 +161,8 @@ if (playback.protected) {
 | `retryAttempts` | 可重试的失败的最多尝试次数。默认值是 3 |
 | `deviceResets` | 设备被拒或播放返回空结果时，一次调用最多更换几台匿名设备。默认值是 2，0 表示关闭 |
 | `device` | 新匿名设备的机型。空字段使用默认值（小米 14） |
+| `signerUrl` | openhongguo-signer 签名服务的地址，例如 `https://signer.example.com`。不填时用内置的签名实现；填了以后，请求签名交给签名服务，见[签名服务部署](https://github.com/beilunyang/openhongguo/blob/main/signer/README.md) |
+| `signerToken` | 签名服务的 token。服务端设置了 `SIGNER_TOKEN` 时才需要 |
 | `log` | 接收诊断日志的函数。日志中的 URL 已经脱敏 |
 | `apiOrigin`、`registerOrigin`、`distributionOrigin` | 接口地址。默认值与 App 相同 |
 

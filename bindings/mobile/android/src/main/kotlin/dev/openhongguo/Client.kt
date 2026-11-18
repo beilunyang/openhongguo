@@ -51,6 +51,13 @@ data class ClientOptions(
     val device: Device? = null,
     /** 接收诊断日志，在 SDK 的线程里调用；日志里的 URL 已经脱敏。 */
     val logger: ((String) -> Unit)? = null,
+    /**
+     * openhongguo-signer 签名服务的地址，如 "https://signer.example.com"。
+     * 为空时用内置的签名实现；设置后，请求签名交给签名服务。
+     */
+    val signerUrl: String? = null,
+    /** 签名服务的 token，服务端设置了 SIGNER_TOKEN 时才需要。 */
+    val signerToken: String? = null,
 ) {
     internal fun toJson(): JSONObject = JSONObject().apply {
         put("apiOrigin", apiOrigin)
@@ -59,6 +66,8 @@ data class ClientOptions(
         put("retryAttempts", retryAttempts)
         put("deviceResets", deviceResets)
         put("device", device?.toJson())
+        put("signerUrl", signerUrl)
+        put("signerToken", signerToken)
     }
 }
 

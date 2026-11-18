@@ -222,6 +222,10 @@ openhongguo-cli 是 openhongguo 的命令行工具，命令名是 `ohg`。它可
 | `OHG_API_ORIGIN` | 读取类接口的地址 |
 | `OHG_REGISTER_ORIGIN` | 设备注册接口的地址 |
 | `OHG_DISTRIBUTION_ORIGIN` | 短剧筛选（`/reading/distribution/`）和活动榜接口的地址 |
+| `OHG_SIGNER_URL` | openhongguo-signer 签名服务的地址，例如 `https://signer.example.com`。设置后，请求签名交给签名服务，不再用内置的 Go 实现 |
+| `OHG_SIGNER_TOKEN` | 签名服务的 token。服务端设置了 `SIGNER_TOKEN` 时才需要 |
+
+内置的 Go 签名失效时（例如 App 升级后签名算法变化），可以部署签名服务（见 [signer/README.md](../signer/README.md)），再设置 `OHG_SIGNER_URL` 切过去。签名服务不可用时，`ohg` 不会回退到内置实现，而是报 `signer unavailable` 和服务给出的原因，退出码与其他「暂时不可用」的错误相同。
 
 配置目录的默认值是 `<用户配置目录>/openhongguo`。在 macOS 上，它是 `~/Library/Application Support/openhongguo`。
 

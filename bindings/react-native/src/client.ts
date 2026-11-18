@@ -122,6 +122,13 @@ export interface ClientOptions {
   deviceResets?: number;
   /** 新注册设备自称的机型；未填的字段取默认值（小米 14）。 */
   device?: Partial<Device>;
+  /**
+   * openhongguo-signer 签名服务的地址，如 "https://signer.example.com"。
+   * 不填时用内置的签名实现；填了以后，请求签名交给签名服务。
+   */
+  signerUrl?: string;
+  /** 签名服务的 token，服务端设置了 SIGNER_TOKEN 时才需要。 */
+  signerToken?: string;
 }
 
 /** PlaybackResult 是 resolvePlayback 的结果。 */
@@ -135,8 +142,28 @@ export interface PlaybackResult {
 
 /** createClientWith 用给定的原生模块创建客户端。 */
 export async function createClientWith(native: Native, options: ClientOptions = {}): Promise<Client> {
-  const { profilePath, log, apiOrigin, registerOrigin, distributionOrigin, retryAttempts = 3, deviceResets = 2, device } = options;
-  const config = JSON.stringify({ apiOrigin, registerOrigin, distributionOrigin, retryAttempts, deviceResets, device });
+  const {
+    profilePath,
+    log,
+    apiOrigin,
+    registerOrigin,
+    distributionOrigin,
+    retryAttempts = 3,
+    deviceResets = 2,
+    device,
+    signerUrl,
+    signerToken,
+  } = options;
+  const config = JSON.stringify({
+    apiOrigin,
+    registerOrigin,
+    distributionOrigin,
+    retryAttempts,
+    deviceResets,
+    device,
+    signerUrl,
+    signerToken,
+  });
   const res = JSON.parse(native.createClient(profilePath ?? native.defaultProfilePath(), config, !!log));
   if (res.error) throw new OpenhongguoError(res.error);
   const id: number = res.id;

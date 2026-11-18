@@ -133,6 +133,7 @@ client, err := adapters.NewClient("anonymous.json", sdk.Options{
 | `DeviceResets` | 设备被拒或播放返回空结果时，一次调用最多更换几台匿名设备。`sdk.Int(0)` 表示关闭，见[自动更换设备](#自动更换设备) | 2 |
 | `Logger` | 接收诊断日志 | 不记录 |
 | `APIOrigin`、`RegisterOrigin`、`DistributionOrigin` | 接口地址 | 与 App 相同 |
+| `SignerURL`、`SignerToken` | 签名服务的地址和 token，见[使用签名服务](#使用签名服务) | 空，用内置的 Go 实现签名 |
 
 如果不用 `adapters`，直接调用 `sdk.NewClient`。这时 `Transport` 和 `ProfileStore` 是必填的。
 
@@ -285,6 +286,21 @@ type Transport interface {
 > - 请求 URL 的查询参数包含设备 ID。记录日志前先脱敏。
 
 `httptransport.New()` 是默认实现。`SetLogger` 把每个请求的方法、脱敏后的 URL 和状态码写入日志。
+
+### 使用签名服务
+
+SDK 默认用内置的 Go 实现签名。如果它失效（例如 App 升级后签名算法变化），可以部署 [openhongguo-signer](signer/README.md)，再设置 `SignerURL` 切过去：
+
+```go
+client, err := adapters.NewClient("anonymous.json", sdk.Options{
+	SignerURL:   "https://signer.example.com",
+	SignerToken: token, // 服务端没有设置 SIGNER_TOKEN 时省略
+})
+```
+
+需要签名的请求发出前，SDK 把 URL 和请求体发给签名服务，用返回的签名头替换内置实现算出的签名头。发给签名服务的请求同样经过 `Transport`。签名服务不可用时，调用返回 `sdk.ErrSignerUnavailable`（其他语言是错误码 `SIGNER_UNAVAILABLE`），错误信息带有签名服务给出的原因。这时请求不会发出，也不会回退到内置实现：内置实现失效时，回退得到的往往是空结果，SDK 还会因此换设备重试。需要回退时，由调用方用不设 `SignerURL` 的客户端重新调用。
+
+其他语言的 SDK 用 `signerUrl` 和 `signerToken` 选项，命令行工具用环境变量 `OHG_SIGNER_URL` 和 `OHG_SIGNER_TOKEN`，见[命令行文档](docs/cli.md#配置)。
 
 ## 接口
 

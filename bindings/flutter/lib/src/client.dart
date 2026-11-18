@@ -133,6 +133,13 @@ class ClientOptions {
   /// 新注册设备自称的机型；为空的字段取默认值（小米 14）。
   final Device? device;
 
+  /// openhongguo-signer 签名服务的地址，如 "https://signer.example.com"。
+  /// 为空时用内置的签名实现；设置后，请求签名交给签名服务。
+  final String? signerUrl;
+
+  /// 签名服务的 token，服务端设置了 SIGNER_TOKEN 时才需要。
+  final String? signerToken;
+
   /// 接收诊断日志；日志里的 URL 已经脱敏。
   final void Function(String line)? log;
 
@@ -144,6 +151,8 @@ class ClientOptions {
     this.retryAttempts = 3,
     this.deviceResets = 2,
     this.device,
+    this.signerUrl,
+    this.signerToken,
     this.log,
   });
 
@@ -154,6 +163,8 @@ class ClientOptions {
         'retryAttempts': retryAttempts,
         'deviceResets': deviceResets,
         if (device != null) 'device': device!.toJson(),
+        if (signerUrl != null) 'signerUrl': signerUrl,
+        if (signerToken != null) 'signerToken': signerToken,
       });
 }
 

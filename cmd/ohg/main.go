@@ -41,7 +41,11 @@ func run() int {
 		APIOrigin:          os.Getenv("OHG_API_ORIGIN"),
 		RegisterOrigin:     os.Getenv("OHG_REGISTER_ORIGIN"),
 		DistributionOrigin: os.Getenv("OHG_DISTRIBUTION_ORIGIN"),
-		RetryAttempts:      3,
+		// Hands signing to an openhongguo-signer service instead of the
+		// built-in Go signer.
+		SignerURL:     os.Getenv("OHG_SIGNER_URL"),
+		SignerToken:   os.Getenv("OHG_SIGNER_TOKEN"),
+		RetryAttempts: 3,
 	})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)

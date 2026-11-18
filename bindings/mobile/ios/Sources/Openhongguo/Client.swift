@@ -104,12 +104,18 @@ public struct ClientOptions: Sendable {
     public var deviceResets: Int
     /// 新注册设备自称的机型；为空的字段取默认值（小米 14）。
     public var device: Device?
+    /// openhongguo-signer 签名服务的地址，如 "https://signer.example.com"。
+    /// 为空时用内置的签名实现；设置后，请求签名交给签名服务。
+    public var signerUrl: String?
+    /// 签名服务的 token，服务端设置了 SIGNER_TOKEN 时才需要。
+    public var signerToken: String?
     /// 接收诊断日志，在 SDK 的线程里调用；日志里的 URL 已经脱敏。
     public var logger: (@Sendable (String) -> Void)?
 
     public init(
         apiOrigin: String? = nil, registerOrigin: String? = nil, distributionOrigin: String? = nil,
-        retryAttempts: Int = 3, deviceResets: Int = 2, device: Device? = nil, logger: (@Sendable (String) -> Void)? = nil
+        retryAttempts: Int = 3, deviceResets: Int = 2, device: Device? = nil,
+        signerUrl: String? = nil, signerToken: String? = nil, logger: (@Sendable (String) -> Void)? = nil
     ) {
         self.apiOrigin = apiOrigin
         self.registerOrigin = registerOrigin
@@ -117,6 +123,8 @@ public struct ClientOptions: Sendable {
         self.retryAttempts = retryAttempts
         self.deviceResets = deviceResets
         self.device = device
+        self.signerUrl = signerUrl
+        self.signerToken = signerToken
         self.logger = logger
     }
 
@@ -125,12 +133,14 @@ public struct ClientOptions: Sendable {
         var retryAttempts: Int
         var deviceResets: Int
         var device: Device?
+        var signerUrl, signerToken: String?
     }
 
     func json() throws -> String {
         let cfg = Config(
             apiOrigin: apiOrigin, registerOrigin: registerOrigin, distributionOrigin: distributionOrigin,
-            retryAttempts: retryAttempts, deviceResets: deviceResets, device: device)
+            retryAttempts: retryAttempts, deviceResets: deviceResets, device: device,
+            signerUrl: signerUrl, signerToken: signerToken)
         return String(decoding: try JSONEncoder().encode(cfg), as: UTF8.self)
     }
 }
