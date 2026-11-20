@@ -1305,6 +1305,17 @@ public struct Series: Codable, Hashable, Sendable {
     public var author: String
     public var category: String
     public var words: Int
+    /// Vid 是首页瀑布流卡片直接给出的可播视频 id（通常是第 1 集），
+    /// 可以直接交给 ResolvePlayback，不需要先列集。商城卡片为空。
+    public var vid: String
+    /// DurationSeconds 是整部剧的总时长，不是单集时长。
+    public var durationSeconds: Int
+    /// PlayCount 是服务端上报的播放量。
+    public var playCount: Int
+    /// RecText 是卡片上的热度角标文案，例如 "4390万热度"。
+    public var recText: String
+    /// Vertical 标记竖屏短剧；首页漫剧的卡片为 false。
+    public var vertical: Bool?
     /// Status 是发布状态；PayType 是付费墙状态。
     public var status: SeriesStatus
     public var payType: PayType
@@ -1339,7 +1350,7 @@ public struct Series: Codable, Hashable, Sendable {
     /// Rows 是详情页的次要信息行（季、分类、演员）。
     public var rows: [InfoRow]
 
-    public init(id: String = "", title: String = "", description: String = "", coverUrl: String = "", coverExpiresAt: String = "", episodeCount: Int = 0, author: String = "", category: String = "", words: Int = 0, status: SeriesStatus = SeriesStatus(rawValue: 0), payType: PayType = PayType(rawValue: 0), contentType: ContentType = ContentType(rawValue: 0), platform: PlatformType = PlatformType(rawValue: 0), heat: Int = 0, playCount: Int = 0, followCount: Int = 0, diggCount: Int = 0, createdAt: String = "", rightText: String = "", subtitles: [String] = [], ageGate: Int = 0, isMultiSeason: Bool = false, seasonIndex: Int = 0, relatedAlbumId: String = "", relatedNovelBookId: String = "", novel: Novel? = nil, rows: [InfoRow] = []) {
+    public init(id: String = "", title: String = "", description: String = "", coverUrl: String = "", coverExpiresAt: String = "", episodeCount: Int = 0, author: String = "", category: String = "", words: Int = 0, vid: String = "", durationSeconds: Int = 0, playCount: Int = 0, recText: String = "", vertical: Bool? = nil, status: SeriesStatus = SeriesStatus(rawValue: 0), payType: PayType = PayType(rawValue: 0), contentType: ContentType = ContentType(rawValue: 0), platform: PlatformType = PlatformType(rawValue: 0), heat: Int = 0, playCount: Int = 0, followCount: Int = 0, diggCount: Int = 0, createdAt: String = "", rightText: String = "", subtitles: [String] = [], ageGate: Int = 0, isMultiSeason: Bool = false, seasonIndex: Int = 0, relatedAlbumId: String = "", relatedNovelBookId: String = "", novel: Novel? = nil, rows: [InfoRow] = []) {
         self.id = id
         self.title = title
         self.description = description
@@ -1349,6 +1360,11 @@ public struct Series: Codable, Hashable, Sendable {
         self.author = author
         self.category = category
         self.words = words
+        self.vid = vid
+        self.durationSeconds = durationSeconds
+        self.playCount = playCount
+        self.recText = recText
+        self.vertical = vertical
         self.status = status
         self.payType = payType
         self.contentType = contentType
@@ -1379,6 +1395,11 @@ public struct Series: Codable, Hashable, Sendable {
         case author
         case category
         case words
+        case vid
+        case durationSeconds = "duration_seconds"
+        case playCount = "play_count"
+        case recText = "rec_text"
+        case vertical
         case status
         case payType = "pay_type"
         case contentType = "content_type"
@@ -1410,6 +1431,11 @@ public struct Series: Codable, Hashable, Sendable {
         self.author = try c.decodeIfPresent(String.self, forKey: .author) ?? ""
         self.category = try c.decodeIfPresent(String.self, forKey: .category) ?? ""
         self.words = try c.decodeIfPresent(Int.self, forKey: .words) ?? 0
+        self.vid = try c.decodeIfPresent(String.self, forKey: .vid) ?? ""
+        self.durationSeconds = try c.decodeIfPresent(Int.self, forKey: .durationSeconds) ?? 0
+        self.playCount = try c.decodeIfPresent(Int.self, forKey: .playCount) ?? 0
+        self.recText = try c.decodeIfPresent(String.self, forKey: .recText) ?? ""
+        self.vertical = try c.decodeIfPresent(Bool.self, forKey: .vertical)
         self.status = try c.decodeIfPresent(SeriesStatus.self, forKey: .status) ?? SeriesStatus(rawValue: 0)
         self.payType = try c.decodeIfPresent(PayType.self, forKey: .payType) ?? PayType(rawValue: 0)
         self.contentType = try c.decodeIfPresent(ContentType.self, forKey: .contentType) ?? ContentType(rawValue: 0)
@@ -1489,8 +1515,19 @@ public struct SeriesSummary: Codable, Hashable, Sendable {
     public var author: String
     public var category: String
     public var words: Int
+    /// Vid 是首页瀑布流卡片直接给出的可播视频 id（通常是第 1 集），
+    /// 可以直接交给 ResolvePlayback，不需要先列集。商城卡片为空。
+    public var vid: String
+    /// DurationSeconds 是整部剧的总时长，不是单集时长。
+    public var durationSeconds: Int
+    /// PlayCount 是服务端上报的播放量。
+    public var playCount: Int
+    /// RecText 是卡片上的热度角标文案，例如 "4390万热度"。
+    public var recText: String
+    /// Vertical 标记竖屏短剧；首页漫剧的卡片为 false。
+    public var vertical: Bool?
 
-    public init(id: String = "", title: String = "", description: String = "", coverUrl: String = "", coverExpiresAt: String = "", episodeCount: Int = 0, author: String = "", category: String = "", words: Int = 0) {
+    public init(id: String = "", title: String = "", description: String = "", coverUrl: String = "", coverExpiresAt: String = "", episodeCount: Int = 0, author: String = "", category: String = "", words: Int = 0, vid: String = "", durationSeconds: Int = 0, playCount: Int = 0, recText: String = "", vertical: Bool? = nil) {
         self.id = id
         self.title = title
         self.description = description
@@ -1500,6 +1537,11 @@ public struct SeriesSummary: Codable, Hashable, Sendable {
         self.author = author
         self.category = category
         self.words = words
+        self.vid = vid
+        self.durationSeconds = durationSeconds
+        self.playCount = playCount
+        self.recText = recText
+        self.vertical = vertical
     }
 
     enum CodingKeys: String, CodingKey {
@@ -1512,6 +1554,11 @@ public struct SeriesSummary: Codable, Hashable, Sendable {
         case author
         case category
         case words
+        case vid
+        case durationSeconds = "duration_seconds"
+        case playCount = "play_count"
+        case recText = "rec_text"
+        case vertical
     }
 
     public init(from decoder: Decoder) throws {
@@ -1525,6 +1572,11 @@ public struct SeriesSummary: Codable, Hashable, Sendable {
         self.author = try c.decodeIfPresent(String.self, forKey: .author) ?? ""
         self.category = try c.decodeIfPresent(String.self, forKey: .category) ?? ""
         self.words = try c.decodeIfPresent(Int.self, forKey: .words) ?? 0
+        self.vid = try c.decodeIfPresent(String.self, forKey: .vid) ?? ""
+        self.durationSeconds = try c.decodeIfPresent(Int.self, forKey: .durationSeconds) ?? 0
+        self.playCount = try c.decodeIfPresent(Int.self, forKey: .playCount) ?? 0
+        self.recText = try c.decodeIfPresent(String.self, forKey: .recText) ?? ""
+        self.vertical = try c.decodeIfPresent(Bool.self, forKey: .vertical)
     }
 }
 
