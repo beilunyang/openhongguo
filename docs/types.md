@@ -534,6 +534,11 @@ SeriesSummary 是公开目录中的一行。ID 和标题是稳定字段。
 | `author` | `author` | string | Author、Category 和 Words 由分类页的行填充。 |
 | `category` | `category` | string |  |
 | `words` | `words` | int64 |  |
+| `vid` | `vid` | string | Vid 是首页瀑布流卡片直接给出的可播视频 id（通常是第 1 集），可以直接交给 ResolvePlayback，不需要先列集。商城卡片为空。 |
+| `duration_seconds` | `durationSeconds` | int | DurationSeconds 是整部剧的总时长，不是单集时长。 |
+| `play_count` | `playCount` | int64 | PlayCount 是服务端上报的播放量。 |
+| `rec_text` | `recText` | string | RecText 是卡片上的热度角标文案，例如 "4390万热度"。 |
+| `vertical` | `vertical` | bool 或 null | Vertical 标记竖屏短剧；首页漫剧的卡片为 false。 |
 
 ### ShortFilterPage
 

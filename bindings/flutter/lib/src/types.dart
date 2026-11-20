@@ -1375,6 +1375,17 @@ class Series {
   final String author;
   final String category;
   final int words;
+  /// Vid 是首页瀑布流卡片直接给出的可播视频 id（通常是第 1 集），
+  /// 可以直接交给 ResolvePlayback，不需要先列集。商城卡片为空。
+  final String vid;
+  /// DurationSeconds 是整部剧的总时长，不是单集时长。
+  final int durationSeconds;
+  /// PlayCount 是服务端上报的播放量。
+  final int playCount;
+  /// RecText 是卡片上的热度角标文案，例如 "4390万热度"。
+  final String recText;
+  /// Vertical 标记竖屏短剧；首页漫剧的卡片为 false。
+  final bool? vertical;
   /// Status 是发布状态；PayType 是付费墙状态。
   final SeriesStatus status;
   final PayType payType;
@@ -1419,6 +1430,11 @@ class Series {
     this.author = '',
     this.category = '',
     this.words = 0,
+    this.vid = '',
+    this.durationSeconds = 0,
+    this.playCount = 0,
+    this.recText = '',
+    this.vertical,
     this.status = const SeriesStatus(0),
     this.payType = const PayType(0),
     this.contentType = const ContentType(0),
@@ -1450,6 +1466,11 @@ class Series {
         author: _asString(j['author']),
         category: _asString(j['category']),
         words: _asInt(j['words']),
+        vid: _asString(j['vid']),
+        durationSeconds: _asInt(j['duration_seconds']),
+        playCount: _asInt(j['play_count']),
+        recText: _asString(j['rec_text']),
+        vertical: _asBool(j['vertical']),
         status: SeriesStatus(_asInt(j['status'])),
         payType: PayType(_asInt(j['pay_type'])),
         contentType: ContentType(_asInt(j['content_type'])),
@@ -1481,6 +1502,11 @@ class Series {
         'author': author,
         'category': category,
         'words': words,
+        'vid': vid,
+        'duration_seconds': durationSeconds,
+        'play_count': playCount,
+        'rec_text': recText,
+        if (vertical != null) 'vertical': vertical!,
         'status': status.value,
         'pay_type': payType.value,
         'content_type': contentType.value,
@@ -1568,6 +1594,17 @@ class SeriesSummary {
   final String author;
   final String category;
   final int words;
+  /// Vid 是首页瀑布流卡片直接给出的可播视频 id（通常是第 1 集），
+  /// 可以直接交给 ResolvePlayback，不需要先列集。商城卡片为空。
+  final String vid;
+  /// DurationSeconds 是整部剧的总时长，不是单集时长。
+  final int durationSeconds;
+  /// PlayCount 是服务端上报的播放量。
+  final int playCount;
+  /// RecText 是卡片上的热度角标文案，例如 "4390万热度"。
+  final String recText;
+  /// Vertical 标记竖屏短剧；首页漫剧的卡片为 false。
+  final bool? vertical;
 
   const SeriesSummary({
     this.id = '',
@@ -1579,6 +1616,11 @@ class SeriesSummary {
     this.author = '',
     this.category = '',
     this.words = 0,
+    this.vid = '',
+    this.durationSeconds = 0,
+    this.playCount = 0,
+    this.recText = '',
+    this.vertical,
   });
 
   /// 从 Go SDK 输出的 JSON 解码；缺省的字段取零值。
@@ -1592,6 +1634,11 @@ class SeriesSummary {
         author: _asString(j['author']),
         category: _asString(j['category']),
         words: _asInt(j['words']),
+        vid: _asString(j['vid']),
+        durationSeconds: _asInt(j['duration_seconds']),
+        playCount: _asInt(j['play_count']),
+        recText: _asString(j['rec_text']),
+        vertical: _asBool(j['vertical']),
       );
 
   /// 编码成与 Go SDK 相同的 JSON。
@@ -1605,6 +1652,11 @@ class SeriesSummary {
         'author': author,
         'category': category,
         'words': words,
+        'vid': vid,
+        'duration_seconds': durationSeconds,
+        'play_count': playCount,
+        'rec_text': recText,
+        if (vertical != null) 'vertical': vertical!,
       };
 }
 
