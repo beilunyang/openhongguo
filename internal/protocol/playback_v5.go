@@ -10,7 +10,11 @@ import (
 )
 
 const (
-	PathPlaybackV5      = "/novel/player/multi_video_model/player/v1"
+	// PathPlaybackV5 是播放模型接口。2026-11-20 起服务端把 dr_scene 从路径段
+	// 移进了请求体（App 里的模板是 POST /novel/player/multi_video_model/:dr_scene/v1/），
+	// 旧路径 /multi_video_model/player/v1 仍回 HTTP 200 但响应体为空，
+	// 所以它不再被当成「路由不可用」。
+	PathPlaybackV5      = "/novel/player/multi_video_model/v1/"
 	PlaybackVersionCode = 74332
 	PlaybackVersionName = "7.4.3.32"
 )
