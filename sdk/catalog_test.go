@@ -1451,3 +1451,77 @@ func TestContentKeyUnwrapsKeyMaterial(t *testing.T) {
 		t.Fatal("nil model accepted")
 	}
 }
+
+func TestResolvePlaybackFallsBackToVideoTab(t *testing.T) {
+	var paths []string
+	var videoTabCookie string
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		paths = append(paths, r.URL.Path)
+		switch r.URL.Path {
+		case protocol.PathRegister:
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write(fixture(t, "register-response.json"))
+		case protocol.PathPlaybackV5:
+			w.WriteHeader(http.StatusOK)
+		case protocol.PathVideoTab:
+			videoTabCookie = r.Header.Get("Cookie")
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write(fixture(t, "video-tab-playback.json"))
+		default:
+			http.NotFound(w, r)
+		}
+	})
+	client, _ := testClient(t, handler)
+	playback, err := client.ResolvePlayback(context.Background(), "7100000000000301", sdk.PlaybackOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(playback.Streams) != 1 || playback.Streams[0].Definition != "360p" {
+		t.Fatalf("playback = %+v", playback)
+	}
+	if !containsPath(paths, protocol.PathPlaybackV5) || !containsPath(paths, protocol.PathVideoTab) {
+		t.Fatalf("paths = %v", paths)
+	}
+	if videoTabCookie == "" {
+		t.Fatal("video_tab request missing Cookie")
+	}
+}
+
+func containsPath(paths []string, want string) bool {
+	for _, path := range paths {
+		if path == want {
+			return true
+		}
+	}
+	return false
+}
+
+func TestResolvePlaybackFallsBackToLegacyWhenVideoTabIsEmpty(t *testing.T) {
+	var paths []string
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		paths = append(paths, r.URL.Path)
+		switch r.URL.Path {
+		case protocol.PathRegister:
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write(fixture(t, "register-response.json"))
+		case protocol.PathPlaybackV5, protocol.PathVideoTab:
+			w.WriteHeader(http.StatusOK)
+		case protocol.PathPlayback:
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write(fixture(t, "clear-playback.json"))
+		default:
+			http.NotFound(w, r)
+		}
+	})
+	client, _ := testClient(t, handler)
+	playback, err := client.ResolvePlayback(context.Background(), "7100000000000201", sdk.PlaybackOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(playback.Streams) != 2 {
+		t.Fatalf("playback = %+v", playback)
+	}
+	if !containsPath(paths, protocol.PathVideoTab) || !containsPath(paths, protocol.PathPlayback) {
+		t.Fatalf("paths = %v", paths)
+	}
+}

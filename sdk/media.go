@@ -16,7 +16,7 @@ import (
 type PlaybackOptions struct{}
 
 // ResolvePlayback 加载一集的各清晰度地址、编码和码率。
-// 优先使用 V5 手机端协议，空响应或接口不支持时兼容旧播放接口。
+// 优先使用 V5 手机端协议，空响应时改走 video_tab，再不行才兼容旧播放接口。
 // 受保护的模型与 ErrDRMProtected 一起返回，可继续交给 ContentKey。
 func (c *Client) ResolvePlayback(ctx context.Context, episodeID string, _ PlaybackOptions) (*model.Playback, error) {
 	if !validID(episodeID) {
@@ -66,21 +66,32 @@ func (c *Client) ResolvePlayback(ctx context.Context, episodeID string, _ Playba
 				return nil, err
 			}
 			v5Err := err
-			legacyBody, bodyErr := protocol.PlaybackBody(episodeID)
-			if bodyErr != nil {
-				return nil, bodyErr
-			}
-			ticket := c.clock().UnixMilli()
-			query, headers := sign.SignPlaybackPOST(protocol.PathPlayback, protocol.DeviceQueryPairs(c.identity(p)), ticket, p.DeviceID, protocol.VersionName, legacyBody, nil)
-			raw, _, err = c.doRaw(ctx, "POST", c.apiOrigin+protocol.PathPlayback+"?"+query, anonymousHeaders(c, p, ticket, headers), legacyBody)
-			if ctxErr := ctx.Err(); ctxErr != nil {
-				return nil, ctxErr
-			}
-			if err != nil {
-				if playbackRouteUnavailable(err) {
-					return nil, v5Err
+			tabRaw, tabErr := c.resolveVideoTab(ctx, p, episodeID)
+			if tabErr == nil && len(tabRaw) > 0 {
+				raw = tabRaw
+			} else {
+				if ctxErr := ctx.Err(); ctxErr != nil {
+					return nil, ctxErr
 				}
-				return nil, err
+				if tabErr != nil && !errors.Is(tabErr, ErrAnonymousLimited) && !playbackRouteUnavailable(tabErr) {
+					return nil, tabErr
+				}
+				legacyBody, bodyErr := protocol.PlaybackBody(episodeID)
+				if bodyErr != nil {
+					return nil, bodyErr
+				}
+				ticket := c.clock().UnixMilli()
+				query, headers := sign.SignPlaybackPOST(protocol.PathPlayback, protocol.DeviceQueryPairs(c.identity(p)), ticket, p.DeviceID, protocol.VersionName, legacyBody, nil)
+				raw, _, err = c.doRaw(ctx, "POST", c.apiOrigin+protocol.PathPlayback+"?"+query, anonymousHeaders(c, p, ticket, headers), legacyBody)
+				if ctxErr := ctx.Err(); ctxErr != nil {
+					return nil, ctxErr
+				}
+				if err != nil {
+					if playbackRouteUnavailable(err) {
+						return nil, v5Err
+					}
+					return nil, err
+				}
 			}
 		}
 		playback, err := protocol.ParsePlayback(raw, episodeID)
@@ -97,6 +108,27 @@ func (c *Client) ResolvePlayback(ctx context.Context, episodeID string, _ Playba
 func playbackRouteUnavailable(err error) bool {
 	var api *APIError
 	return errors.As(err, &api) && (api.HTTPStatus == 404 || api.HTTPStatus == 405)
+}
+
+// resolveVideoTab asks the bodyless video_tab route for the episode model.
+// It is a fallback for devices or episodes whose V5 player POST returns an
+// empty body; the response has the same TTVideoEngine model shape.
+func (c *Client) resolveVideoTab(ctx context.Context, p *DeviceProfile, episodeID string) ([]byte, error) {
+	ticket := c.clock().UnixMilli()
+	query, signed, err := c.playbackSigner.Sign(protocol.VideoTabPairs(episodeID, c.identity(p)), ticket, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	headers := anonymousHeaders(c, p, ticket, signed)
+	headers["User-Agent"] = protocol.PlaybackUserAgent(c.deviceOf(p))
+	headers["Accept"] = "application/json"
+	headers["x-xs-from-web"] = "0"
+	// video_tab 的抓包里带了游客 Cookie（含 ttreq），匿名设备档案没有 ttreq 时也要补上
+	if p != nil {
+		headers["Cookie"] = guestCookie(p)
+	}
+	raw, _, err := c.doRaw(ctx, "GET", c.apiOrigin+protocol.PathVideoTab+"?"+query, headers, nil)
+	return raw, err
 }
 
 // ContentKey 从播放模型算出加密分集的内容密钥。

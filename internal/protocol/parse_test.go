@@ -329,6 +329,19 @@ func TestParsePlaybackAcceptsObjectModelAndKeyedList(t *testing.T) {
 	}
 }
 
+func TestParsePlaybackReadsVideoTabGroup(t *testing.T) {
+	playback, err := ParsePlayback(fixture(t, "video-tab-playback.json"), "7100000000000301")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if playback.Protected || len(playback.Streams) != 1 {
+		t.Fatalf("playback = %+v", playback)
+	}
+	if playback.Streams[0].Definition != "360p" || playback.Streams[0].URL != "https://media.invalid/video-tab-360.mp4" {
+		t.Fatalf("stream = %+v", playback.Streams[0])
+	}
+}
+
 func TestParsePlaybackRejectsBusinessCodeAndEmptyList(t *testing.T) {
 	if _, err := ParsePlayback([]byte(`{"code":10001,"message":"denied","data":{}}`), "7100000000000201"); err == nil || !strings.Contains(err.Error(), "10001") {
 		t.Fatalf("business code err = %v", err)

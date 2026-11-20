@@ -15,6 +15,7 @@ const (
 	// 旧路径 /multi_video_model/player/v1 仍回 HTTP 200 但响应体为空，
 	// 所以它不再被当成「路由不可用」。
 	PathPlaybackV5      = "/novel/player/multi_video_model/v1/"
+	PathVideoTab        = "/reading/bookapi/video_tab/multi_video_model/v1/"
 	PlaybackVersionCode = 74332
 	PlaybackVersionName = "7.4.3.32"
 )
@@ -68,6 +69,36 @@ func PlaybackV5Pairs(id SearchIdentity) [][2]string {
 		{"is_android_pad_screen", pad},
 		{"iid", id.InstallID},
 		{"device_id", id.DeviceID},
+	}
+}
+
+// VideoTabPairs is the bodyless video_tab query used when the V5 player
+// endpoint answers an empty model. The fixed phone template matches the
+// upstream 7.4.3.32 client; only the anonymous identity and episode vary.
+func VideoTabPairs(episodeID string, id SearchIdentity) [][2]string {
+	d := id.Device.OrDefault()
+	return [][2]string{
+		{"aid", AID},
+		{"app_name", AppName},
+		{"version_code", strconv.Itoa(PlaybackVersionCode)},
+		{"version_name", PlaybackVersionName},
+		{"channel", d.Channel},
+		{"device_platform", "android"},
+		{"device_type", d.Model},
+		{"os_version", d.OSVersion},
+		{"update_version_code", strconv.Itoa(PlaybackVersionCode)},
+		{"iid", id.InstallID},
+		{"cdid", id.CDID},
+		{"device_id", id.DeviceID},
+		{"video_id", episodeID},
+		{"video_id_type", "0"},
+		{"device_level", "1"},
+		{"need_all_video_definition", "1"},
+		{"need_mp4_align", "0"},
+		{"use_os_player", "0"},
+		{"video_platform", "1024"},
+		{"source", "0"},
+		{"from_video_id", ""},
 	}
 }
 
