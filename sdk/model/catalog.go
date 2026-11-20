@@ -258,6 +258,17 @@ type SeriesSummary struct {
 	Author   string `json:"author,omitempty"`
 	Category string `json:"category,omitempty"`
 	Words    int64  `json:"words,omitempty"`
+	// Vid 是首页瀑布流卡片直接给出的可播视频 id（通常是第 1 集），
+	// 可以直接交给 ResolvePlayback，不需要先列集。商城卡片为空。
+	Vid string `json:"vid,omitempty"`
+	// DurationSeconds 是整部剧的总时长，不是单集时长。
+	DurationSeconds int `json:"duration_seconds,omitempty"`
+	// PlayCount 是服务端上报的播放量。
+	PlayCount int64 `json:"play_count,omitempty"`
+	// RecText 是卡片上的热度角标文案，例如 "4390万热度"。
+	RecText string `json:"rec_text,omitempty"`
+	// Vertical 标记竖屏短剧；首页漫剧的卡片为 false。
+	Vertical *bool `json:"vertical,omitempty"`
 }
 
 // Series 是一部短剧的详情视图。
