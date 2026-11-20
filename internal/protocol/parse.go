@@ -766,6 +766,12 @@ func ParsePlayback(raw []byte, episodeID string) (*model.Playback, error) {
 			return nil, fmt.Errorf("playback group is not an object: %w", err)
 		}
 		entry = grouped
+	} else if group, ok := entry["video_model_data"]; ok {
+		var grouped map[string]json.RawMessage
+		if err := json.Unmarshal(group, &grouped); err != nil {
+			return nil, fmt.Errorf("playback video_model_data is not an object: %w", err)
+		}
+		entry = grouped
 	}
 	if _, ok := entry["video_model"]; !ok {
 		row, ok := entry[episodeID]
