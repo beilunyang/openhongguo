@@ -104,8 +104,8 @@ func (f *flexInt64) UnmarshalJSON(b []byte) error {
 }
 
 type catalogVideo struct {
-	SeriesID    flexString `json:"series_id"`
-	Title       string     `json:"title"`
+	SeriesID flexString `json:"series_id"`
+	Title    string     `json:"title"`
 	// 首页瀑布流（show_type 507）把可播视频、封面、摘要和热度直接放在
 	// video_data 上，没有 video_detail；商城卡片则相反，字段都在
 	// video_detail 里。两者共用 catalogVideo。
@@ -119,7 +119,7 @@ type catalogVideo struct {
 	ContentType  int        `json:"content_type"`
 	PlayCount    flexInt64  `json:"play_cnt"`
 	RecText      string     `json:"rec_text"`
-	VideoDetail struct {
+	VideoDetail  struct {
 		Title        string            `json:"series_title"`
 		Intro        string            `json:"series_intro"`
 		Cover        string            `json:"series_cover"`
