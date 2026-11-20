@@ -73,15 +73,16 @@ func PlaybackV5Pairs(id SearchIdentity) [][2]string {
 // endpoint answers an empty model. The fixed phone template matches the
 // upstream 7.4.3.32 client; only the anonymous identity and episode vary.
 func VideoTabPairs(episodeID string, id SearchIdentity) [][2]string {
+	d := id.Device.OrDefault()
 	return [][2]string{
 		{"aid", AID},
 		{"app_name", AppName},
 		{"version_code", strconv.Itoa(PlaybackVersionCode)},
 		{"version_name", PlaybackVersionName},
-		{"channel", "vivo_8662_64"},
+		{"channel", d.Channel},
 		{"device_platform", "android"},
-		{"device_type", "PGT-AN10"},
-		{"os_version", "12"},
+		{"device_type", d.Model},
+		{"os_version", d.OSVersion},
 		{"update_version_code", strconv.Itoa(PlaybackVersionCode)},
 		{"iid", id.InstallID},
 		{"cdid", id.CDID},
