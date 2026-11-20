@@ -1,0 +1,11 @@
+{
+  "code": 0,
+  "message": "SUCCESS",
+  "data": {
+    "video_model_data": {
+      "7100000000000301": {
+        "video_model": "{\"status\":10,\"video_id\":\"v-video-tab\",\"media_type\":\"video\",\"video_duration\":42,\"url_expire\":1893456000,\"video_list\":{\"0\":{\"main_url\":\"https://media.invalid/video-tab-360.mp4\",\"video_meta\":{\"definition\":\"360p\",\"codec_type\":\"h264\",\"vwidth\":640,\"vheight\":360,\"bitrate\":400000}}}}"
+      }
+    }
+  }
+}
