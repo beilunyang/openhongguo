@@ -272,3 +272,16 @@ openhongguo-cli 是 openhongguo 的命令行工具，命令名是 `ohg`。它可
 | macOS | 实际测试了 mpv 和 ffplay 播放 |
 | Linux | 单元测试通过。实际测试了下载和解密 |
 | Windows | 只做了交叉编译。`internal/media` 的测试用 `/bin/sh` 脚本模拟播放器，不能在 Windows 上运行 |
+
+### Selecting an explicitly compatible codec
+
+`play` and `download` accept `--codec bytevc1` (case-insensitive exact model codec name). This filters representations before quality selection; it does not detect decoder support or transcode. The default is unchanged. An explicit `--quality` is still required to match within the filtered streams; it is never silently overridden. `play --json` continues to report the complete model.
+
+Some episodes offer bytevc2 at lower resolutions but bytevc1/HEVC at a higher resolution. A lower resolution therefore does not necessarily improve compatibility. Inspect the model first and choose a codec supported by your media tools:
+
+```sh
+ohg play <series-id> --episode 2 --codec bytevc1 --download episode2.mp4
+ohg download <series-id> --episodes 1-3 --codec bytevc1 --jobs 1
+```
+
+If no matching codec or quality is available, the command fails before launching the media tool. No signing, endpoint, authentication or decryption behavior is changed.

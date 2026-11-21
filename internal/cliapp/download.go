@@ -77,7 +77,7 @@ func cmdDownload(ctx context.Context, args []string, d Dependencies) error {
 			defer wg.Done()
 			for episode := range jobs {
 				path := filepath.Join(dir, fmt.Sprintf("第%0*d集.mp4", width, episode.Number))
-				written, skipped, err := downloadEpisode(ctx, d, episode, path, f.quality)
+				written, skipped, err := downloadEpisode(ctx, d, episode, path, f.quality, f.codec)
 				mu.Lock()
 				switch {
 				case err != nil:
@@ -119,7 +119,7 @@ feed:
 
 // downloadEpisode saves one episode to path through a .part file, so path
 // only ever holds a complete episode. An existing path is skipped.
-func downloadEpisode(ctx context.Context, d Dependencies, episode model.Episode, path, quality string) (written int64, skipped bool, err error) {
+func downloadEpisode(ctx context.Context, d Dependencies, episode model.Episode, path, quality string, codecs ...string) (written int64, skipped bool, err error) {
 	if _, err := os.Stat(path); err == nil {
 		return 0, true, nil
 	}
@@ -127,7 +127,11 @@ func downloadEpisode(ctx context.Context, d Dependencies, episode model.Episode,
 	if err != nil && !(errors.Is(err, sdk.ErrDRMProtected) && pb != nil) {
 		return 0, false, err
 	}
-	stream, err := pb.Select(quality)
+	codec := ""
+	if len(codecs) > 0 {
+		codec = codecs[0]
+	}
+	stream, err := selectCodec(pb, quality, codec)
 	if err != nil {
 		return 0, false, usage("%s", err.Error())
 	}
