@@ -1,3 +1,9 @@
+## 0.4.1
+
+- 修复取播放地址得到空结果的问题。服务端从 2026-11-23 起拒绝带模拟器状态值的签名，0.4.0 的播放请求返回 HTTP 200 和空响应体，换设备也不能恢复。
+- 内置签名改为与 App 自带的签名库 v04.10.03 一致，签名里的设备环境按真机的格式生成，机型、品牌和系统版本取自匿名设备档案。
+- 签名服务 openhongguo-signer 同步修复。使用签名服务的用户需要把镜像更新到 `beilunyang/openhongguo-signer:v0.4.1`。
+
 ## 0.4.0
 
 - 新增选项 `signerUrl` 和 `signerToken`（Go 是 `SignerURL`、`SignerToken`），可以把请求签名交给 openhongguo-signer 签名服务。不设时仍用内置签名。签名服务不可用时返回 `SIGNER_UNAVAILABLE`，错误信息带有签名服务给出的原因，不会回退到内置签名。命令行工具用环境变量 `OHG_SIGNER_URL` 和 `OHG_SIGNER_TOKEN`。
