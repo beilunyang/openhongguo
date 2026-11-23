@@ -269,6 +269,20 @@ client, err := adapters.NewClient("anonymous.json", sdk.Options{
 - **更换设备会覆盖 `ProfileStore` 里的设备档案**，并通过 `Logger` 记一行日志。
 - 更换的次数用完后，SDK 返回最后一次的错误。
 
+### 自定义备用播放 Provider（Go）
+
+在 `sdk.Options.FallbackPlaybackProvider` 中传入自己的解析函数，即可在 `ResolvePlayback` 的现有 V5、旧接口和自动换设备流程结束后补一次取模。触发条件包括空响应、空模型、网络错误及 HTTP 404、405、5xx。主链路成功、返回受保护模型、要求认证、触发限流或调用已取消时不会调用备用 Provider。
+
+```go
+client, err := adapters.NewClient("anonymous.json", sdk.Options{
+	FallbackPlaybackProvider: resolveFromMyService,
+})
+```
+
+`resolveFromMyService` 的签名为 `func(context.Context, string) (*model.Playback, error)`。将分集 ID 交给你配置并有权使用的来源，返回 `EpisodeID` 匹配且至少有一个流 URL 的模型。函数应支持并发，并使用传入的 `context.Context` 处理取消与截止时间。服务地址和认证由调用方配置，SDK 不向这个函数传递匿名设备档案或请求头。
+
+当备用 Provider 失败时，返回的错误同时包含主链路和备用错误，可用 `errors.Is` 或 `errors.As` 检查。该设置为 Go SDK 提供，默认关闭。
+
 ## 自定义 HTTP
 
 实现 `sdk.Transport`，可以使用代理、记录请求或在测试中模拟服务端。

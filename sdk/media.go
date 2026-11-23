@@ -15,8 +15,14 @@ import (
 // PlaybackOptions 预留给码流规格或接口的选择。
 type PlaybackOptions struct{}
 
+// PlaybackProvider 从调用方配置的来源读取指定分集的播放模型。
+// 成功时返回匹配 episodeID 且包含可选码流的模型。实现应遵守 ctx 的取消和截止时间，
+// 并支持同一 Client 上的并发调用。
+type PlaybackProvider func(ctx context.Context, episodeID string) (*model.Playback, error)
+
 // ResolvePlayback 加载一集的各清晰度地址、编码和码率。
 // 优先使用 V5 手机端协议，空响应或接口不支持时兼容旧播放接口。
+// 主链路仍为空或不可用时，可以调用 Options.FallbackPlaybackProvider。
 // 受保护的模型与 ErrDRMProtected 一起返回，可继续交给 ContentKey。
 func (c *Client) ResolvePlayback(ctx context.Context, episodeID string, _ PlaybackOptions) (*model.Playback, error) {
 	if !validID(episodeID) {
@@ -25,6 +31,44 @@ func (c *Client) ResolvePlayback(ctx context.Context, episodeID string, _ Playba
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
+	playback, err := c.resolvePlayback(ctx, episodeID)
+	if c.playbackFallback == nil || !shouldFallbackPlayback(err) {
+		return playback, err
+	}
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		return nil, ctxErr
+	}
+
+	fallback, fallbackErr := c.playbackFallback(ctx, episodeID)
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		return nil, ctxErr
+	}
+	if fallbackErr == nil {
+		switch {
+		case fallback == nil || fallback.EpisodeID != episodeID:
+			fallbackErr = fmt.Errorf("playback model missing for requested episode")
+		default:
+			_, fallbackErr = fallback.Select("")
+		}
+	}
+	if fallbackErr != nil {
+		return nil, fmt.Errorf("%w; fallback playback provider: %w", err, fallbackErr)
+	}
+	if fallback.Protected {
+		return fallback, ErrDRMProtected
+	}
+	return fallback, nil
+}
+
+func shouldFallbackPlayback(err error) bool {
+	var empty protocol.EmptyPlaybackError
+	var api *APIError
+	return errors.Is(err, ErrAnonymousLimited) || errors.As(err, &empty) ||
+		errors.Is(err, ErrTransport) || playbackRouteUnavailable(err) ||
+		(errors.As(err, &api) && api.HTTPStatus >= 500 && api.HTTPStatus < 600)
+}
+
+func (c *Client) resolvePlayback(ctx context.Context, episodeID string) (*model.Playback, error) {
 	body, err := protocol.PlaybackV5Body(episodeID)
 	if err != nil {
 		return nil, err

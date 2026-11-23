@@ -28,8 +28,8 @@ const (
 	defaultDistributionOrigin = "https://" + protocol.DistributionHost
 )
 
-// Client 执行匿名片库读取。只要注入的 transport 和 profile store 可以并发使用，
-// Client 也可以并发使用。
+// Client 执行匿名片库读取。只要注入的 transport、profile store 和备用播放提供方
+// 可以并发使用，Client 也可以并发使用。
 type Client struct {
 	guestMu        sync.Mutex
 	transport      Transport
@@ -50,7 +50,8 @@ type Client struct {
 	deviceResets int
 	resetter     deviceResetter
 	// durations 记住各集的时长，供 ListDanmaku 使用。
-	durations durationCache
+	durations        durationCache
+	playbackFallback PlaybackProvider
 }
 
 // NewClient 根据 opts 创建客户端。Transport 和 ProfileStore 必填；
@@ -111,6 +112,7 @@ func NewClient(opts Options) (*Client, error) {
 		authProvider:   opts.AuthProvider,
 		logger:         opts.Logger, clock: opts.Clock,
 		apiOrigin: api, registerOrigin: reg, distOrigin: dist,
+		playbackFallback: opts.FallbackPlaybackProvider,
 	}, nil
 }
 
