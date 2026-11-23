@@ -58,6 +58,7 @@ func signRequest(path string, pairs [][2]string, nowMillis int64, deviceID, vers
 	if ent.NowSecs == 0 {
 		ent.NowSecs = int64(khronos)
 	}
+	env := requestMedusaEnv(query, deviceID)
 	headers := map[string]string{
 		"Accept":                    "application/json; charset=utf-8,application/x-protobuf",
 		"x-xs-from-web":             "0",
@@ -69,9 +70,9 @@ func signRequest(path string, pairs [][2]string, nowMillis int64, deviceID, vers
 		"x-khronos":                 strconv.FormatUint(uint64(khronos), 10),
 		"x-ladon":                   base64.StdEncoding.EncodeToString(be32(khronos)),
 		"x-argus":                   base64.StdEncoding.EncodeToString(le32(khronos)),
-		"x-gorgon":                  xGorgon(query, body, hasBody, khronos, ent.GorgonRandom),
+		"x-gorgon":                  xGorgonFlags(query, body, hasBody, khronos, ent.GorgonRandom, env.flags()),
 		"x-helios":                  heliosV5(khronos, ent.HeliosRandom),
-		"x-medusa":                  assembleMedusaV5(medusaIn, deviceID, processMedusaEnv(), ent.medusaRandom()),
+		"x-medusa":                  assembleMedusaV5(medusaIn, deviceID, env, ent.medusaRandom()),
 		"x-tt-dt":                   "",
 	}
 	if hasBody {
@@ -116,8 +117,23 @@ var (
 
 // processMedusaEnv is the environment this process reports, fixed at first use.
 func processMedusaEnv() MedusaEnv {
-	medusaEnvOnce.Do(func() { medusaEnv = DefaultMedusaEnv(time.Now().UnixMilli()) })
+	medusaEnvOnce.Do(func() {
+		now := time.Now()
+		medusaEnv = DefaultMedusaEnv(now.UnixMilli())
+		// An app process and the zygote that forked it, not the emulator's
+		// fixed pair.
+		medusaEnv.PID = 3000 + now.UnixNano()%25000
+		medusaEnv.PPID = 500 + (now.UnixNano()/25000)%700
+	})
 	return medusaEnv
+}
+
+// requestMedusaEnv is the process environment shaped as the device the
+// signed query describes.
+func requestMedusaEnv(query, deviceID string) MedusaEnv {
+	env := processMedusaEnv()
+	env.Device = medusaDeviceOf(query, deviceID)
+	return env
 }
 
 func drawEntropy(nowMillis int64) Entropy {

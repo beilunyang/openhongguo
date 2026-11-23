@@ -29,6 +29,9 @@ type MedusaEnv struct {
 	// 377 under the emulator; since 2026-11-23 the service answers playback
 	// requests that carry 377 with an empty body.
 	Status int64
+	// Device switches the message to a real device's layout; nil keeps the
+	// emulator's.
+	Device *MedusaDevice
 }
 
 // Message field 21 as the SDK reports it on a real device (captured from
@@ -69,9 +72,6 @@ const (
 	medusaV5PackedHead = 0xca
 )
 
-// medusaV5Flags is message field 10; the same bytes lead the transformed message.
-var medusaV5Flags = []byte{0x08, 0, 0, 0, 0, 0, 0, 0}
-
 // medusaV5Input is what a request contributes to x-medusa.
 type medusaV5Input struct {
 	querySM3 [32]byte
@@ -96,12 +96,18 @@ func newMedusaV5Input(query string, body []byte, ts uint32) (medusaV5Input, bool
 
 // assembleMedusaV5 builds x-medusa as the v04.10.03 SDK does.
 func assembleMedusaV5(in medusaV5Input, deviceID string, env MedusaEnv, rnd MedusaRandom) string {
-	return sealMedusaV5(medusaV5Message(in, deviceID, env, rnd), in, rnd)
+	return sealMedusaV5(medusaV5Message(in, deviceID, env, rnd), in, rnd, env.flags())
 }
 
 func medusaV5Message(in medusaV5Input, deviceID string, env MedusaEnv, rnd MedusaRandom) []byte {
 	ts := in.ts
-	const counter = 694367 // message field 15; the same in every capture
+	const unset = 694367 // message field 15's counters when the SDK has not set them
+	counters := concat(protoSInt(1, unset), protoSInt(2, unset), protoSInt(3, unset), protoSInt(5, unset))
+	var appVersion []byte
+	if env.Device != nil {
+		counters = concat(protoSInt(1, nextMedusaCount()), protoSInt(2, 5), protoSInt(3, unset), protoSInt(5, unset))
+		appVersion = protoString(7, env.Device.AppVersion)
+	}
 	return concat(
 		protoBytes(1, playbackV5Magic),
 		protoSInt(2, medusaV5Version),
@@ -109,22 +115,46 @@ func medusaV5Message(in medusaV5Input, deviceID string, env MedusaEnv, rnd Medus
 		protoString(4, appID),
 		protoString(5, deviceID),
 		protoString(6, playbackV5License),
+		appVersion,
 		protoString(8, medusaV5SDKVersion),
 		protoSInt(9, medusaV5SDKCode),
-		protoBytes(10, medusaV5Flags),
+		protoBytes(10, env.flags()),
 		protoSInt(12, int64(ts)),
 		protoBytes(13, in.digest[:]),
 		protoBytes(14, in.querySM3[:6]),
-		protoBytes(15, concat(protoSInt(1, counter), protoSInt(2, counter), protoSInt(3, counter), protoSInt(5, counter))),
+		protoBytes(15, counters),
 		protoSInt(17, int64(ts)),
 		protoString(20, "none"),
 		protoSInt(21, env.Status),
-		protoBytes(23, medusaV5Env(ts, deviceID, env)),
+		protoBytes(23, medusaV5Env(ts, deviceID, env, rnd)),
 		protoString(24, medusaV5JSON(env)),
 	)
 }
 
-func medusaV5Env(ts uint32, deviceID string, env MedusaEnv) []byte {
+func medusaV5Env(ts uint32, deviceID string, env MedusaEnv, rnd MedusaRandom) []byte {
+	if d := env.Device; d != nil {
+		uptime := int64(ts) - env.LaunchMillis/1000
+		if uptime < 1 {
+			uptime = 1
+		}
+		version := d.AppVersion
+		if version == "" {
+			version = notSet
+		}
+		return concat(
+			protoSInt(1, uptime),
+			protoString(6, medusaV5EnvVersion),
+			protoSInt(7, env.PID),
+			protoString(8, env.Channel),
+			protoBytes(12, medusaV5DeviceBlock(deviceID, env, int64(ts)*1000+int64(rnd.Message%1000))),
+			protoEmpty(13),
+			protoString(14, version),
+			protoSInt(15, env.PPID),
+			protoSInt(18, int64(ts)+env.Clock18),
+			protoSInt(19, int64(ts)+env.Clock19),
+			protoSInt(20, int64(ts)+env.Clock20),
+		)
+	}
 	return concat(
 		protoString(6, medusaV5EnvVersion),
 		protoSInt(7, env.PID),
@@ -169,10 +199,10 @@ func medusaV5JSON(env MedusaEnv) string {
 }
 
 // sealMedusaV5 encrypts a message into the x-medusa wire format.
-func sealMedusaV5(message []byte, in medusaV5Input, rnd MedusaRandom) string {
+func sealMedusaV5(message []byte, in medusaV5Input, rnd MedusaRandom, flags []byte) string {
 	ts := in.ts
 	hash, seed := keyHash(playbackV5SignKey, rnd.Key)
-	transformed := append(append([]byte(nil), medusaV5Flags...), xmxor(message, hash[:])...)
+	transformed := append(append([]byte(nil), flags...), xmxor(message, hash[:])...)
 	for i, j := 0, len(transformed)-1; i < j; i, j = i+1, j-1 {
 		transformed[i], transformed[j] = transformed[j], transformed[i]
 	}

@@ -52,7 +52,7 @@ func (s *PlaybackV5Signer) Sign(pairs [][2]string, nowMillis int64, body []byte,
 		headers := map[string]string{
 			"x-khronos": strconv.FormatUint(uint64(ts), 10),
 			"x-helios":  heliosV5(ts, ent.HeliosRandom),
-			"x-medusa":  assembleMedusaV5(medusaIn, queryValue(query, "device_id"), processMedusaEnv(), ent.medusaRandom()),
+			"x-medusa":  assembleMedusaV5(medusaIn, queryValue(query, "device_id"), requestMedusaEnv(query, queryValue(query, "device_id")), ent.medusaRandom()),
 		}
 		if body != nil {
 			headers["Content-Type"] = "application/json; charset=utf-8"

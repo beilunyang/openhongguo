@@ -25,7 +25,15 @@ func rc4Gorgon(data, key []byte) []byte {
 	return out
 }
 
+// xGorgon builds x-gorgon with the emulator's flags.
 func xGorgon(query string, body []byte, hasBody bool, khronos, random uint32) string {
+	return xGorgonFlags(query, body, hasBody, khronos, random, medusaEmulatorFlags)
+}
+
+// xGorgonFlags builds x-gorgon. flags is x-medusa's message field 10: its
+// first two bytes key the cipher and are sent as bytes 4 and 5 (08 00 under
+// the emulator, 04 05 on a device; v04.06.04 used 40 01).
+func xGorgonFlags(query string, body []byte, hasBody bool, khronos, random uint32, flags []byte) string {
 	queryMD5 := md5Raw([]byte(query))
 	bodyMD5 := [16]byte{}
 	if hasBody {
@@ -37,8 +45,7 @@ func xGorgon(query string, body []byte, hasBody bool, khronos, random uint32) st
 	input = append(input, 0, 0, 0, 0)
 	input = append(input, le32(medusaV5SDKCode)...)
 	input = append(input, be32(khronos)...)
-	// 0x08, 0x00: the v04.10.03 SDK's marker (v04.06.04 used 0x40, 0x01).
-	key := []byte{0x4a, 0x08, 0x16, byte((random >> 8) & 255), 0x47, 0x6c, 0x00, byte(random & 255)}
+	key := []byte{0x4a, flags[0], 0x16, byte((random >> 8) & 255), 0x47, 0x6c, flags[1], byte(random & 255)}
 	out := rc4Gorgon(input, key)
 	n := len(out)
 	for i := 0; i < n; i++ {
@@ -50,7 +57,7 @@ func xGorgon(query string, body []byte, hasBody bool, khronos, random uint32) st
 		}
 		out[i] = byte(^(reverseBits(next^swapped) ^ 20))
 	}
-	result := []byte{0x84, 0x04, byte(random & 255), byte((random >> 8) & 255), 0x08, 0x00}
+	result := []byte{0x84, 0x04, byte(random & 255), byte((random >> 8) & 255), flags[0], flags[1]}
 	result = append(result, out...)
 	return hex.EncodeToString(result)
 }
