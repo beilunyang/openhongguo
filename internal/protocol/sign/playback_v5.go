@@ -33,6 +33,9 @@ func (s *PlaybackV5Signer) Sign(pairs [][2]string, nowMillis int64, body []byte,
 	withTicket := append([][2]string(nil), pairs...)
 	slot := -1
 	for i, kv := range withTicket {
+		if kv[0] == "ts" {
+			continue
+		}
 		if kv[0] == "_rticket" {
 			slot = i
 			break
@@ -41,6 +44,14 @@ func (s *PlaybackV5Signer) Sign(pairs [][2]string, nowMillis int64, body []byte,
 	if slot < 0 {
 		withTicket = append(withTicket, [2]string{"_rticket", ""})
 		slot = len(withTicket) - 1
+	}
+	// 旧版播放协议要求 query 里带 ts（秒），与 x-khronos 一致；就地填写保持参数顺序。
+	tsText := strconv.FormatUint(uint64(ts), 10)
+	for i, kv := range withTicket {
+		if kv[0] == "ts" {
+			withTicket[i][1] = tsText
+			break
+		}
 	}
 	for offset := int64(0); offset < 1024; offset++ {
 		withTicket[slot][1] = strconv.FormatInt(nowMillis+offset, 10)
@@ -102,22 +113,22 @@ func (s *PlaybackV5Signer) medusa(query string, queryHash [32]byte, bodyMD5 [16]
 	version := queryValue(query, "version_name")
 	device := concat(
 		protoSInt(1, 1), protoSInt(2, 2), protoString(3, appID), protoString(4, deviceID),
-		protoString(5, s.nonce), protoString(6, "!noperm!"), protoString(12, "Asia/Shanghai,8"),
+		protoString(5, s.nonce), protoString(6, "!noperm!"), protoString(7, "!notset!"), protoString(12, "Asia/Shanghai,8"),
 		protoString(13, "zh_CN"), protoString(22, queryValue(query, "os_version")), protoSInt(25, s.started),
 		protoString(30, queryValue(query, "device_type")), protoString(31, "HONOR"),
 		protoString(32, queryValue(query, "device_type")), protoString(34, "HONOR"),
 	)
-	env := concat(protoString(6, "v04.10.03.04-bugfix"), protoString(8, queryValue(query, "channel")), protoBytes(12, device), protoString(14, version))
+	env := concat(protoString(6, "v04.06.04.03-bugfix"), protoString(8, queryValue(query, "channel")), protoBytes(12, device), protoString(14, version))
 	digest := playbackV5Hash(queryHash, bodyMD5, ts)
 	flags := make([]byte, 8)
 	message := concat(
 		protoBytes(1, playbackV5Magic), protoSInt(2, 5), protoSInt(3, int64(entropy.MessageRandom)),
 		protoString(4, appID), protoString(5, deviceID), protoString(6, playbackV5License),
-		protoString(7, version), protoString(8, "v04.10.03-ml-android"), protoSInt(9, 0x040a0300),
+		protoString(7, version), protoString(8, "v04.06.04-ml-android"), protoSInt(9, 0x04060400),
 		protoBytes(10, flags), protoSInt(12, int64(ts)), protoBytes(13, digest), protoBytes(14, queryHash[:6]),
 		protoBytes(15, concat(protoSInt(1, 1), protoSInt(2, 1), protoSInt(3, 1), protoSInt(5, 1))),
 		protoSInt(17, int64(ts)), protoString(20, "none"), protoSInt(21, 377), protoBytes(23, env),
-		protoString(24, "{\"cmr\":16777216,\"cmr2\":16777216,\"un_h\":11,\"vpn\":0,\"kd\":0,\"dyn\":\"\",\"do\":1,\"tk\":true}"),
+		protoString(24, "{\"cmr\":16777216,\"cmr2\":16777216,\"un_h\":1879194040,\"vpn\":0,\"kd\":0,\"fkd\":3672518972,\"pd\":-1872573247,\"dyn\":\"\",\"do\":0,\"tk\":true}"),
 	)
 	hash, mask := keyHash(playbackV5SignKey, entropy.Random)
 	transformed := append(flags, xmxor(message, hash[:])...)
