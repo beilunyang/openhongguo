@@ -1,11 +1,11 @@
 package sign
 
-// 播放协议 v04.10.03 的公开线格式常量，与普通接口的 AES-V3 分开保存。
-const playbackV5License = "646637794"
+// 播放协议 v04.06.04 的公开线格式常量（服务端当前只接受这一档），与普通接口的 AES-V3 分开保存。
+const playbackV5License = "AXYQOS6n2m60x1fVZHIrH3iol"
 
 var (
-	playbackV5Magic   = mustHex("2d4b4fca49750d433fb5ae2c226dcc56")
-	playbackV5SignKey = mustHex("b23c2a470a20d105dc3f8c4438f8272ed46d6c89ffdcdedd5108698d26e9489d")
+	playbackV5Magic   = mustHex("f7e85ffad7d7dc3bd62ac87057cf6118")
+	playbackV5SignKey = mustHex("8ebdfa3806ecc5cee79423e6029ed82540bc2218bb7eaef71cb691f7aa8aa2f5")
 	playbackV5Sbox    = mustHex(
 		"53290fe9e51f316f90f74a7e034d367784ab49237cd0135cdc632c322fd3be0e2624a417ecd9151a7ff64f60730a87f9445ec6ada2f865d22b696c4188f24c0d" +
 			"f37b75510b939f6bc2fe6883e68bc8c722181ba0bdb08c9871b50c9a16b46eea8eed20ba4b8a14e0fcf1468dbbef05a93e5a9d7dcf06898635c1fd99f5de287a" +

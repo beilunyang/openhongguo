@@ -1,8 +1,6 @@
 package protocol
 
 import (
-	"bytes"
-	"compress/gzip"
 	"fmt"
 	"strconv"
 
@@ -10,7 +8,7 @@ import (
 )
 
 const (
-	PathPlaybackV5      = "/novel/player/multi_video_model/player/v1"
+	PathPlaybackV5      = "/novel/player/multi_video_model/v1/"
 	PlaybackVersionCode = 74332
 	PlaybackVersionName = "7.4.3.32"
 )
@@ -39,6 +37,7 @@ func PlaybackV5Pairs(id SearchIdentity) [][2]string {
 		{"os", "android"},
 		{"ssmix", "a"},
 		{"_rticket", ""},
+		{"ts", ""},
 		{"cdid", id.CDID},
 		{"channel", d.Channel},
 		{"aid", AID},
@@ -67,31 +66,20 @@ func PlaybackV5Pairs(id SearchIdentity) [][2]string {
 	}
 }
 
-// PlaybackV5Body 只压缩一次；调用方将返回的原始字节同时用于签名和发送。
+// PlaybackV5Body 返回明文 JSON；调用方把同一份字节同时用于签名和发送。
 //
-// device_level 保持 1，和 App 的 3 不同：3 会让服务端把 1080p 以下的码流
-// 都换成 bytevc2（2026-11-18 实测），App 自带解码器，ffmpeg 和 mpv 都解不了；
-// 1 下发的全是 bytevc1。
+// device_level 与旧版播放协议一致用 4；此档下发的全是 bytevc1，ffmpeg/mpv 可解。
 func PlaybackV5Body(episodeID string) ([]byte, error) {
 	body, err := jsonMarshal(map[string]any{
 		"biz_param": map[string]any{
-			"detail_page_version": 0, "device_level": 1, "disable_digg_stat": false,
+			"detail_page_version": 0, "device_level": 4, "disable_digg_stat": false,
 			"disable_video_relate_book": false, "need_all_video_definition": true,
 			"need_mp4_align": false, "use_os_player": false, "use_server_dns": false, "video_platform": 1024,
 		},
 		"mixed_video_id_map": map[string][]string{"1004": {episodeID}},
-		"dr_scene":           "player",
 	})
 	if err != nil {
 		return nil, err
 	}
-	var output bytes.Buffer
-	writer := gzip.NewWriter(&output)
-	if _, err = writer.Write(body); err != nil {
-		return nil, err
-	}
-	if err = writer.Close(); err != nil {
-		return nil, err
-	}
-	return output.Bytes(), nil
+	return body, nil
 }
