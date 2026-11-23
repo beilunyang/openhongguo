@@ -107,12 +107,87 @@ public class MetasecEmulator extends AbstractJni {
         // Configure CustomSyscallHandler with module info
         configureSyscallHandler();
 
+        if (!"0".equals(System.getenv("SIGNER_DEVICE_STATUS"))) installDeviceStatusPatch();
+
         if (System.getenv("EMU_TRACE") != null) installTrace();
         dm.callJNI_OnLoad(emulator);
         System.out.println("[openhongguo-signer] JNI_OnLoad completed");
         UnidbgPointer fn = k3.findNativeFunction(emulator,
                 "a(IIJLjava/lang/String;Ljava/lang/Object;)Ljava/lang/Object;");
         System.out.println("[openhongguo-signer] k3.a native=" + (fn == null ? "null" : loc(fn.peer)));
+    }
+
+    /**
+     * x-medusa message field 20 ("none") followed by field 21 with the value
+     * the SDK reports under an emulator, 377. The service answers playback
+     * requests that carry 377 with an empty body (since 2026-11-23); a real
+     * device reports 369. Both encode in two bytes, so the plaintext can be
+     * patched in place before the SDK encrypts it.
+     */
+    private static final byte[] EMULATOR_STATUS = {
+            (byte) 0xa2, 0x01, 0x04, 'n', 'o', 'n', 'e', (byte) 0xa8, 0x01, (byte) 0xf2, 0x05};
+    private static final int STATUS_BYTE = 9;
+    private static final byte DEVICE_STATUS_BYTE = (byte) 0xe2; // zigzag(369) = e2 05
+    /** The last four bytes of the x-medusa sign key. */
+    private static final byte[] SIGN_KEY_TAIL = {0x26, (byte) 0xe9, 0x48, (byte) 0x9d};
+
+    /**
+     * Rewrites the emulator's status in the x-medusa plaintext to a real
+     * device's. The SDK serializes the message, then hashes the sign key to
+     * derive the cipher key, then encrypts; the hash's last block copies the
+     * key's final four bytes with the .so's memcpy (so+0x3a0840), which marks
+     * the moment the plaintext is complete and still unencrypted.
+     */
+    private void installDeviceStatusPatch() {
+        long memcpy = module.base + 0x3a0840L;
+        emulator.getBackend().hook_add_new(new CodeHook() {
+            @Override public void hook(Backend b, long address, int size, Object user) {
+                if (!signingActive || b.reg_read(Arm64Const.UC_ARM64_REG_X2).longValue() != 4) return;
+                long src = b.reg_read(Arm64Const.UC_ARM64_REG_X1).longValue();
+                try {
+                    if (!Arrays.equals(b.mem_read(src, 4), SIGN_KEY_TAIL)) return;
+                } catch (RuntimeException e) {
+                    return;
+                }
+                int patched = patchEmulatorStatus(b);
+                if (patched == 0) {
+                    System.out.println("[openhongguo-signer] device status patch: x-medusa plaintext not found");
+                }
+            }
+            @Override public void onAttach(UnHook unHook) {}
+            @Override public void detach() {}
+        }, memcpy, memcpy, null);
+    }
+
+    /** Patches every copy of the plaintext in writable memory; returns how many. */
+    private int patchEmulatorStatus(Backend b) {
+        int patched = 0;
+        for (com.github.unidbg.memory.MemoryMap map : emulator.getMemory().getMemoryMap()) {
+            if ((map.prot & 2) == 0 || map.size > (64L << 20)) continue; // PROT_WRITE
+            if (map.base >= module.base && map.base < module.base + module.size) continue;
+            byte[] region;
+            try {
+                region = b.mem_read(map.base, map.size);
+            } catch (RuntimeException e) {
+                continue;
+            }
+            for (int at = indexOf(region, EMULATOR_STATUS, 0); at >= 0; at = indexOf(region, EMULATOR_STATUS, at + 1)) {
+                b.mem_write(map.base + at + STATUS_BYTE, new byte[]{DEVICE_STATUS_BYTE});
+                patched++;
+            }
+        }
+        return patched;
+    }
+
+    private static int indexOf(byte[] data, byte[] pattern, int from) {
+        outer:
+        for (int i = from; i <= data.length - pattern.length; i++) {
+            for (int j = 0; j < pattern.length; j++) {
+                if (data[i + j] != pattern[j]) continue outer;
+            }
+            return i;
+        }
+        return -1;
     }
 
     private int traceLogs;

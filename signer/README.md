@@ -32,6 +32,12 @@ build/install/openhongguo-signer/bin/openhongguo-signer
 signer/scripts/compare.sh
 ```
 
+### 设备状态改写
+
+SDK 在模拟器里把 x-medusa 的状态字段（消息字段 21）报成 377，真机上是 369。服务端从 2026-11-23 起对带 377 的播放请求返回空响应。签名服务默认在 SDK 加密之前，把明文里的这个值改成 369；`.so` 本身没有改动。
+
+设置环境变量 `SIGNER_DEVICE_STATUS=0` 可以关掉改写，得到 SDK 的原始输出，供分析和对照使用。
+
 ## Docker 部署
 
 部署包含两个容器：
