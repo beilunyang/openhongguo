@@ -1,6 +1,23 @@
 # openhongguo-signer
 
+[![Docker](https://img.shields.io/docker/v/beilunyang/openhongguo-signer?sort=semver&label=docker)](https://hub.docker.com/r/beilunyang/openhongguo-signer)
+[![Docker pulls](https://img.shields.io/docker/pulls/beilunyang/openhongguo-signer)](https://hub.docker.com/r/beilunyang/openhongguo-signer)
+
 openhongguo-signer 是签名服务。它在 unidbg 里运行 App 自带的 `libmetasec_ml.so`，为请求生成 X-Gorgon、X-Helios、X-Medusa 等签名头。
+
+> **建议部署**
+>
+> 即使平时用 SDK 内置的签名，也建议提前部署一个签名服务备用。
+>
+> - **内置签名会失效。** 它是按 App 的签名库移植的。App 升级或服务端调整校验后，内置签名可能取不到播放地址，要等 SDK 发新版才能恢复。
+> - **签名服务恢复得更快。** 它运行的是 App 自带的签名库。出问题时更新镜像就行，各语言的 SDK 不用升级，只需设置 `SignerURL`。
+> - **切换不用改代码逻辑。** 所有语言的 SDK 都支持签名服务，见[选择签名方式](../README.md#选择签名方式)。
+>
+> 一条命令就能在本机跑起来，正式部署见 [Docker 部署](#docker-部署)：
+>
+> ```sh
+> docker run -d --name openhongguo-signer -p 127.0.0.1:19830:19830 beilunyang/openhongguo-signer:latest
+> ```
 
 ## 目录
 

@@ -5,11 +5,13 @@
 [![npm react-native](https://img.shields.io/npm/v/react-native-openhongguo?label=npm%20react-native)](https://www.npmjs.com/package/react-native-openhongguo)
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.beilunyang/openhongguo)](https://central.sonatype.com/artifact/io.github.beilunyang/openhongguo)
 [![pub.dev](https://img.shields.io/pub/v/openhongguo)](https://pub.dev/packages/openhongguo)
+[![Docker](https://img.shields.io/docker/v/beilunyang/openhongguo-signer?sort=semver&label=docker%20signer)](https://hub.docker.com/r/beilunyang/openhongguo-signer)
 [![CI](https://github.com/beilunyang/openhongguo/actions/workflows/ci.yml/badge.svg)](https://github.com/beilunyang/openhongguo/actions/workflows/ci.yml)
 
 [![npm downloads](https://img.shields.io/npm/d18m/openhongguo?label=npm%20downloads)](https://www.npmjs.com/package/openhongguo)
 [![react-native downloads](https://img.shields.io/npm/d18m/react-native-openhongguo?label=react-native%20downloads)](https://www.npmjs.com/package/react-native-openhongguo)
 [![pub downloads](https://img.shields.io/pub/dm/openhongguo?label=pub%20downloads)](https://pub.dev/packages/openhongguo)
+[![Docker pulls](https://img.shields.io/docker/pulls/beilunyang/openhongguo-signer?label=docker%20pulls)](https://hub.docker.com/r/beilunyang/openhongguo-signer)
 [![CLI downloads](https://img.shields.io/github/downloads/beilunyang/openhongguo/total?label=CLI%20downloads)](https://github.com/beilunyang/openhongguo/releases)
 
 openhongguo 是红果短剧（Hongguo）的非官方 SDK，提供 Go、Node.js、Android、iOS、React Native 和 Flutter 版本。SDK 可以浏览短剧目录、搜索短剧、读取短剧和分集的详情与弹幕，并取得分集的播放地址和内容密钥。
