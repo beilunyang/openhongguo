@@ -50,6 +50,7 @@ func TestAssembleMedusaV5MatchesSDK(t *testing.T) {
 		if err := json.Unmarshal([]byte(rndJSON), &rnd); err != nil {
 			t.Fatal(err)
 		}
+		env.Status = medusaEmulatorStatus // the vectors come from the emulator
 		query := rawURL[strings.IndexByte(rawURL, '?')+1:]
 		in, ok := newMedusaV5Input(query, body, uint32(ts))
 		if !ok {
@@ -62,5 +63,24 @@ func TestAssembleMedusaV5MatchesSDK(t *testing.T) {
 	}
 	if n < 8 {
 		t.Fatalf("only %d vectors", n)
+	}
+}
+
+// The service answers playback requests whose x-medusa carries the
+// emulator's status with an empty body (observed 2026-11-23), so the
+// environment this package signs with must report a real device's.
+func TestDefaultMedusaEnvReportsDeviceStatus(t *testing.T) {
+	if got := DefaultMedusaEnv(0).Status; got != medusaDeviceStatus || got == medusaEmulatorStatus {
+		t.Fatalf("status = %d, want %d", got, medusaDeviceStatus)
+	}
+	in, _ := newMedusaV5Input("device_id=1234567890123456", nil, 1763460000) // the digest variant does not matter here
+	device := medusaV5Message(in, "1234567890123456", DefaultMedusaEnv(0), MedusaRandom{})
+	emulator := DefaultMedusaEnv(0)
+	emulator.Status = medusaEmulatorStatus
+	if string(device) == string(medusaV5Message(in, "1234567890123456", emulator, MedusaRandom{})) {
+		t.Fatal("status is not part of the message")
+	}
+	if want := string(protoSInt(21, medusaDeviceStatus)); !strings.Contains(string(device), want) {
+		t.Fatalf("message lacks field 21 = %d", medusaDeviceStatus)
 	}
 }

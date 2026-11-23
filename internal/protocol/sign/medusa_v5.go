@@ -12,7 +12,8 @@ import (
 // the request timestamp.
 //
 // DefaultMedusaEnv returns the values the SDK reports under the unidbg
-// emulator (openhongguo-signer), which the service accepts.
+// emulator (openhongguo-signer), except Status, which the service only
+// accepts with a real device's value.
 type MedusaEnv struct {
 	PID, PPID    int64
 	LaunchMillis int64
@@ -24,10 +25,22 @@ type MedusaEnv struct {
 	UnH, Fkd, Pd int64
 	Sts          int64
 	Lp, Fl       string
+	// Status is message field 21. The SDK reports 369 on a real device and
+	// 377 under the emulator; since 2026-11-23 the service answers playback
+	// requests that carry 377 with an empty body.
+	Status int64
 }
 
+// Message field 21 as the SDK reports it on a real device (captured from
+// the 7.4.5.32 app on 2026-11-23) and under the unidbg emulator.
+const (
+	medusaDeviceStatus   = 369
+	medusaEmulatorStatus = 377
+)
+
 // DefaultMedusaEnv returns an environment shaped like the emulator's, with
-// the process fields set from the given launch time.
+// the process fields set from the given launch time and the status of a
+// real device.
 func DefaultMedusaEnv(launchMillis int64) MedusaEnv {
 	return MedusaEnv{
 		PID: 4321, PPID: 1234,
@@ -35,8 +48,9 @@ func DefaultMedusaEnv(launchMillis int64) MedusaEnv {
 		Clock18:      766353820, Clock19: 16, Clock20: -1072050540,
 		Channel: "xiaomi_8662_64",
 		UnH:     2398682137, Sts: 27, Fkd: 1963693275, Pd: 1442983616,
-		Lp: "2|520830913092|521433182354|2078052786776|1081701896",
-		Fl: "0|0|2523408538|2586339478|997724116|0|0|0|0|606600138",
+		Lp:     "2|520830913092|521433182354|2078052786776|1081701896",
+		Fl:     "0|0|2523408538|2586339478|997724116|0|0|0|0|606600138",
+		Status: medusaDeviceStatus,
 	}
 }
 
@@ -104,7 +118,7 @@ func medusaV5Message(in medusaV5Input, deviceID string, env MedusaEnv, rnd Medus
 		protoBytes(15, concat(protoSInt(1, counter), protoSInt(2, counter), protoSInt(3, counter), protoSInt(5, counter))),
 		protoSInt(17, int64(ts)),
 		protoString(20, "none"),
-		protoSInt(21, 377),
+		protoSInt(21, env.Status),
 		protoBytes(23, medusaV5Env(ts, deviceID, env)),
 		protoString(24, medusaV5JSON(env)),
 	)
