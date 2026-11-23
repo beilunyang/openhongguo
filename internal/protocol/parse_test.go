@@ -1052,3 +1052,16 @@ func TestSuggestPairsNameThePrefixQ(t *testing.T) {
 		t.Fatalf("suggest pairs = %v", got)
 	}
 }
+
+func TestParsePlaybackReadsVideoTabGroup(t *testing.T) {
+	playback, err := ParsePlayback(fixture(t, "video-tab-playback.json"), "7100000000000301")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if playback.Protected || len(playback.Streams) != 1 {
+		t.Fatalf("playback = %+v", playback)
+	}
+	if playback.Streams[0].Definition != "360p" || playback.Streams[0].URL != "https://media.invalid/video-tab-360.mp4" {
+		t.Fatalf("stream = %+v", playback.Streams[0])
+	}
+}

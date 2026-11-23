@@ -66,21 +66,32 @@ func (c *Client) ResolvePlayback(ctx context.Context, episodeID string, _ Playba
 				return nil, err
 			}
 			v5Err := err
-			legacyBody, bodyErr := protocol.PlaybackBody(episodeID)
-			if bodyErr != nil {
-				return nil, bodyErr
-			}
-			ticket := c.clock().UnixMilli()
-			query, headers := sign.SignPlaybackPOST(protocol.PathPlayback, protocol.DeviceQueryPairs(c.identity(p)), ticket, p.DeviceID, protocol.VersionName, legacyBody, nil)
-			raw, _, err = c.doRaw(ctx, "POST", c.apiOrigin+protocol.PathPlayback+"?"+query, anonymousHeaders(c, p, ticket, headers), legacyBody)
-			if ctxErr := ctx.Err(); ctxErr != nil {
-				return nil, ctxErr
-			}
-			if err != nil {
-				if playbackRouteUnavailable(err) {
-					return nil, v5Err
+			tabRaw, tabErr := c.resolveVideoTab(ctx, p, episodeID)
+			if tabErr == nil && len(tabRaw) > 0 {
+				raw = tabRaw
+			} else {
+				if ctxErr := ctx.Err(); ctxErr != nil {
+					return nil, ctxErr
 				}
-				return nil, err
+				if tabErr != nil && !errors.Is(tabErr, ErrAnonymousLimited) && !playbackRouteUnavailable(tabErr) {
+					return nil, tabErr
+				}
+				legacyBody, bodyErr := protocol.PlaybackBody(episodeID)
+				if bodyErr != nil {
+					return nil, bodyErr
+				}
+				ticket := c.clock().UnixMilli()
+				query, headers := sign.SignPlaybackPOST(protocol.PathPlayback, protocol.DeviceQueryPairs(c.identity(p)), ticket, p.DeviceID, protocol.VersionName, legacyBody, nil)
+				raw, _, err = c.doRaw(ctx, "POST", c.apiOrigin+protocol.PathPlayback+"?"+query, anonymousHeaders(c, p, ticket, headers), legacyBody)
+				if ctxErr := ctx.Err(); ctxErr != nil {
+					return nil, ctxErr
+				}
+				if err != nil {
+					if playbackRouteUnavailable(err) {
+						return nil, v5Err
+					}
+					return nil, err
+				}
 			}
 		}
 		playback, err := protocol.ParsePlayback(raw, episodeID)
@@ -97,6 +108,25 @@ func (c *Client) ResolvePlayback(ctx context.Context, episodeID string, _ Playba
 func playbackRouteUnavailable(err error) bool {
 	var api *APIError
 	return errors.As(err, &api) && (api.HTTPStatus == 404 || api.HTTPStatus == 405)
+}
+
+// resolveVideoTab asks the bodyless video_tab route for the episode model.
+// It is a fallback for devices or episodes whose V5 player POST returns an
+// empty body; the response has the same TTVideoEngine model shape.
+func (c *Client) resolveVideoTab(ctx context.Context, p *DeviceProfile, episodeID string) ([]byte, error) {
+	query, signed, err := c.playbackSigner.Sign(protocol.VideoTabPairs(episodeID, c.identity(p)), c.clock().UnixMilli(), nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	headers := map[string]string{
+		"User-Agent": protocol.VideoTabUserAgent,
+		"Accept":     "application/json",
+	}
+	for name, value := range signed {
+		headers[name] = value
+	}
+	raw, _, err := c.doRaw(ctx, "GET", c.apiOrigin+protocol.PathVideoTab+"?"+query, headers, nil)
+	return raw, err
 }
 
 // ContentKey 从播放模型算出加密分集的内容密钥。
