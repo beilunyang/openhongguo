@@ -128,8 +128,10 @@ func TestSignPlaybackPOSTShape(t *testing.T) {
 	body := []byte(`{"req_type":1}`)
 	_, headers := SignPlaybackPOST("/novel/player/video_model/v1/", pairs, 1_700_000_000_123, "7000000000000000001", "7.3.9.32", body, ent)
 
-	if _, ok := headers["x-medusa"]; ok {
-		t.Fatal("playback request must not carry x-medusa")
+	// Since 2026-11-23 the service answers playback without x-medusa with an
+	// empty body, so the header has to ride along with the 551 envelope.
+	if headers["x-medusa"] == "" {
+		t.Fatal("playback request must carry x-medusa")
 	}
 	for _, h := range []string{"x-argus", "x-ladon", "x-gorgon", "x-helios", "x-khronos"} {
 		if headers[h] == "" {
