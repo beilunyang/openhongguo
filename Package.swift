@@ -1,7 +1,7 @@
 // swift-tools-version:5.9
 // openhongguo 的 Swift 包，供 App 通过 Swift Package Manager 引用：
 //
-//     .package(url: "https://github.com/beilunyang/openhongguo.git", from: "0.4.0")
+//     .package(url: "https://github.com/beilunyang/openhongguo.git", from: "0.4.1")
 //
 // Go 编译出的 OpenhongguoCore.xcframework 从 GitHub Release 下载。本地开发和
 // 测试用 bindings/mobile/ios/Package.swift，它引用 build.sh 生成的 xcframework。
@@ -16,8 +16,8 @@ let package = Package(
     targets: [
         .binaryTarget(
             name: "OpenhongguoCore",
-            url: "https://github.com/beilunyang/openhongguo/releases/download/v0.4.0/OpenhongguoCore.xcframework.zip",
-            checksum: "f1b3dd4348a009a249a103b9a0e8fac7c8aef06af049049349aa01c7a20f4bc6"
+            url: "https://github.com/beilunyang/openhongguo/releases/download/v0.4.1/OpenhongguoCore.xcframework.zip",
+            checksum: "87e4015e7cebd29a233629cdf30507eb9a0409e162acfea63431a29fd9f97c36"
         ),
         .target(
             name: "Openhongguo",
