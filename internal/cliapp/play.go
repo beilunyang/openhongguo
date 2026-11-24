@@ -238,7 +238,7 @@ func expired(pb *model.Playback) bool {
 
 // playResolved plays, saves, or reports one resolved episode.
 func playResolved(ctx context.Context, d Dependencies, episode model.Episode, playback *model.Playback, key string, f flags, start int) (media.Result, error) {
-	stream, err := playback.Select(f.quality)
+	stream, err := selectCodec(playback, f.quality, f.codec)
 	if err != nil {
 		return media.Result{}, usage("%s", err.Error())
 	}

@@ -12,6 +12,7 @@ type flags struct {
 	channel   string
 	tab       string
 	quality   string
+	codec     string
 	player    string
 	download  string
 	key       string
@@ -84,6 +85,18 @@ func parseFlags(args []string) (flags, error) {
 			}
 			f.episode = n
 			f.episodeSet = true
+		case "codec":
+			if !has {
+				if i+1 >= len(args) {
+					return flags{}, usage("--codec needs a value")
+				}
+				i++
+				val = args[i]
+			}
+			f.codec = strings.TrimSpace(val)
+			if f.codec == "" {
+				return flags{}, usage("--codec needs a value")
+			}
 		case "quality":
 			if !has {
 				if i+1 >= len(args) {
