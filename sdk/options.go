@@ -61,6 +61,9 @@ type Options struct {
 	// nil 表示默认的 2 次；sdk.Int(0) 表示关闭，交给调用方自己调用 ResetDevice。
 	// 换设备会覆盖 ProfileStore 里保存的档案，并通过 Logger 记一行日志。
 	DeviceResets *int
+	// FallbackPlaybackProvider 在现有播放链路返回空模型或上游不可用时使用。
+	// 为 nil 时只使用现有链路。
+	FallbackPlaybackProvider PlaybackProvider
 }
 
 // Int 返回指向 v 的指针，用来设置 Options.DeviceResets 这类可选的整数字段，

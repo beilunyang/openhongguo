@@ -770,6 +770,9 @@ func ParsePlayback(raw []byte, episodeID string) (*model.Playback, error) {
 	if _, ok := entry["video_model"]; !ok {
 		row, ok := entry[episodeID]
 		if !ok {
+			if len(entry) == 0 {
+				return nil, EmptyPlaybackError("playback model missing for requested episode")
+			}
 			return nil, fmt.Errorf("playback model missing for requested episode")
 		}
 		var selected map[string]json.RawMessage
@@ -864,19 +867,24 @@ func ParsePlayback(raw []byte, episodeID string) (*model.Playback, error) {
 		out.Streams = append(out.Streams, stream)
 	}
 	if len(out.Streams) == 0 {
-		return nil, fmt.Errorf("playback model unavailable")
+		return nil, EmptyPlaybackError("playback model unavailable")
 	}
 	out.AudioURL = audioURL
 	out.Protected = protected == len(out.Streams)
 	return out, nil
 }
 
+// EmptyPlaybackError marks a response without a model or usable streams.
+type EmptyPlaybackError string
+
+func (e EmptyPlaybackError) Error() string { return string(e) }
+
 // playbackObject unwraps data.video_model. The service sends a JSON string;
 // an object is accepted so fixtures and older responses parse the same way.
 func playbackObject(raw json.RawMessage) ([]byte, error) {
 	b := bytes.TrimSpace(raw)
 	if len(b) == 0 || string(b) == "null" {
-		return nil, fmt.Errorf("playback model missing")
+		return nil, EmptyPlaybackError("playback model missing")
 	}
 	if b[0] == '"' {
 		var s string
@@ -884,6 +892,9 @@ func playbackObject(raw json.RawMessage) ([]byte, error) {
 			return nil, fmt.Errorf("playback model is not a string: %w", err)
 		}
 		b = bytes.TrimSpace([]byte(s))
+		if len(b) == 0 || string(b) == "null" {
+			return nil, EmptyPlaybackError("playback model is not an object")
+		}
 	}
 	if len(b) == 0 || b[0] != '{' {
 		return nil, fmt.Errorf("playback model is not an object")
@@ -1034,12 +1045,12 @@ func (it playbackItem) protection() (bool, string) {
 func playbackItems(raw json.RawMessage) ([]playbackItem, error) {
 	b := bytes.TrimSpace(raw)
 	if len(b) == 0 || string(b) == "null" {
-		return nil, fmt.Errorf("playback model unavailable")
+		return nil, EmptyPlaybackError("playback model unavailable")
 	}
 	var asList []playbackItem
 	if err := json.Unmarshal(b, &asList); err == nil {
 		if len(asList) == 0 {
-			return nil, fmt.Errorf("playback model unavailable")
+			return nil, EmptyPlaybackError("playback model unavailable")
 		}
 		return asList, nil
 	}
@@ -1048,7 +1059,7 @@ func playbackItems(raw json.RawMessage) ([]playbackItem, error) {
 		return nil, fmt.Errorf("playback model video_list is invalid: %w", err)
 	}
 	if len(asMap) == 0 {
-		return nil, fmt.Errorf("playback model unavailable")
+		return nil, EmptyPlaybackError("playback model unavailable")
 	}
 	keys := make([]string, 0, len(asMap))
 	for k := range asMap {
