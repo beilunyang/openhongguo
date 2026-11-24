@@ -1178,6 +1178,19 @@ data class Series(
     val author: String = "",
     val category: String = "",
     val words: Long = 0L,
+    /**
+     * Vid 是首页瀑布流卡片直接给出的可播视频 id（通常是第 1 集），
+     * 可以直接交给 ResolvePlayback，不需要先列集。商城卡片为空。
+     */
+    val vid: String = "",
+    /** DurationSeconds 是整部剧的总时长，不是单集时长。 */
+    val durationSeconds: Int = 0,
+    /** PlayCount 是服务端上报的播放量。 */
+    val playCount: Long = 0L,
+    /** RecText 是卡片上的热度角标文案，例如 "4390万热度"。 */
+    val recText: String = "",
+    /** Vertical 标记竖屏短剧；首页漫剧的卡片为 false。 */
+    val vertical: Boolean? = null,
     /** Status 是发布状态；PayType 是付费墙状态。 */
     val status: SeriesStatus = SeriesStatus(0),
     val payType: PayType = PayType(0),
@@ -1223,6 +1236,11 @@ data class Series(
         put("author", author)
         put("category", category)
         put("words", words)
+        put("vid", vid)
+        put("duration_seconds", durationSeconds)
+        put("play_count", playCount)
+        put("rec_text", recText)
+        put("vertical", vertical)
         put("status", status.value)
         put("pay_type", payType.value)
         put("content_type", contentType.value)
@@ -1255,6 +1273,11 @@ data class Series(
             author = o.opt("author").asString(),
             category = o.opt("category").asString(),
             words = o.opt("words").asLong(),
+            vid = o.opt("vid").asString(),
+            durationSeconds = o.opt("duration_seconds").asInt(),
+            playCount = o.opt("play_count").asLong(),
+            recText = o.opt("rec_text").asString(),
+            vertical = o.opt("vertical").asBoolean(),
             status = SeriesStatus(o.opt("status").asInt()),
             payType = PayType(o.opt("pay_type").asInt()),
             contentType = ContentType(o.opt("content_type").asInt()),
@@ -1334,6 +1357,19 @@ data class SeriesSummary(
     val author: String = "",
     val category: String = "",
     val words: Long = 0L,
+    /**
+     * Vid 是首页瀑布流卡片直接给出的可播视频 id（通常是第 1 集），
+     * 可以直接交给 ResolvePlayback，不需要先列集。商城卡片为空。
+     */
+    val vid: String = "",
+    /** DurationSeconds 是整部剧的总时长，不是单集时长。 */
+    val durationSeconds: Int = 0,
+    /** PlayCount 是服务端上报的播放量。 */
+    val playCount: Long = 0L,
+    /** RecText 是卡片上的热度角标文案，例如 "4390万热度"。 */
+    val recText: String = "",
+    /** Vertical 标记竖屏短剧；首页漫剧的卡片为 false。 */
+    val vertical: Boolean? = null,
 ) {
     /** 编码成与 Go SDK 相同的 JSON。 */
     fun toJson(): JSONObject = JSONObject().apply {
@@ -1346,6 +1382,11 @@ data class SeriesSummary(
         put("author", author)
         put("category", category)
         put("words", words)
+        put("vid", vid)
+        put("duration_seconds", durationSeconds)
+        put("play_count", playCount)
+        put("rec_text", recText)
+        put("vertical", vertical)
     }
 
     companion object {
@@ -1360,6 +1401,11 @@ data class SeriesSummary(
             author = o.opt("author").asString(),
             category = o.opt("category").asString(),
             words = o.opt("words").asLong(),
+            vid = o.opt("vid").asString(),
+            durationSeconds = o.opt("duration_seconds").asInt(),
+            playCount = o.opt("play_count").asLong(),
+            recText = o.opt("rec_text").asString(),
+            vertical = o.opt("vertical").asBoolean(),
         )
     }
 }

@@ -104,9 +104,22 @@ func (f *flexInt64) UnmarshalJSON(b []byte) error {
 }
 
 type catalogVideo struct {
-	SeriesID    flexString `json:"series_id"`
-	Title       string     `json:"title"`
-	VideoDetail struct {
+	SeriesID flexString `json:"series_id"`
+	Title    string     `json:"title"`
+	// 首页瀑布流（show_type 507）把可播视频、封面、摘要和热度直接放在
+	// video_data 上，没有 video_detail；商城卡片则相反，字段都在
+	// video_detail 里。两者共用 catalogVideo。
+	VID          flexString `json:"vid"`
+	VideoDesc    string     `json:"video_desc"`
+	Cover        string     `json:"cover"`
+	HorizCover   string     `json:"horiz_cover"`
+	Duration     int        `json:"duration"`
+	EpisodeCount int        `json:"episode_cnt"`
+	Vertical     bool       `json:"vertical"`
+	ContentType  int        `json:"content_type"`
+	PlayCount    flexInt64  `json:"play_cnt"`
+	RecText      string     `json:"rec_text"`
+	VideoDetail  struct {
 		Title        string            `json:"series_title"`
 		Intro        string            `json:"series_intro"`
 		Cover        string            `json:"series_cover"`
@@ -290,10 +303,32 @@ func appendCatalogCell(page *CatalogPage, cell catalogCell) {
 		if count == 0 {
 			count = len(v.VideoDetail.VideoList)
 		}
-		page.Items = append(page.Items, model.SeriesSummary{
-			ID: id, Title: title, Description: v.VideoDetail.Intro,
-			CoverURL: v.VideoDetail.Cover, EpisodeCount: count,
-		})
+		if count == 0 {
+			count = v.EpisodeCount
+		}
+		intro := v.VideoDetail.Intro
+		cover := v.VideoDetail.Cover
+		item := model.SeriesSummary{
+			ID: id, Title: title, Description: intro,
+			CoverURL: cover, EpisodeCount: count,
+		}
+		// 首页瀑布流没有 video_detail：封面、摘要、可播视频和热度都在
+		// video_data 上，需要单独取，否则卡片只剩标题。
+		if v.VideoDetail.Title == "" {
+			if item.Description == "" {
+				item.Description = v.VideoDesc
+			}
+			if item.CoverURL == "" {
+				item.CoverURL = v.Cover
+			}
+			item.Vid = v.VID.String()
+			item.DurationSeconds = v.Duration
+			item.PlayCount = int64(v.PlayCount)
+			item.RecText = v.RecText
+			vertical := v.Vertical
+			item.Vertical = &vertical
+		}
+		page.Items = append(page.Items, item)
 	}
 	if cell.VideoDetail != nil {
 		for _, card := range cell.VideoDetail.Cards {
